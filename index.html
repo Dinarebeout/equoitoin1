@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Équilibra-Maths</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            touch-action: none;
+        }
+        .balance-beam {
+            height: 12px;
+            width: 90%;
+            background: #78350f;
+            border-radius: 6px;
+            position: relative;
+        }
+        .fulcrum {
+            width: 0;
+            height: 0;
+            border-left: 30px solid transparent;
+            border-right: 30px solid transparent;
+            border-top: 40px solid #78350f;
+        }
+        .equation-side {
+            width: 45%;
+            min-height: 200px;
+            border: 3px dashed #eab308;
+            border-radius: 16px;
+            padding: 16px;
+            transition: background-color 0.3s, transform 0.2s;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-content: flex-start;
+        }
+        .equation-side.drag-over {
+            background-color: #fef9c3;
+            transform: scale(1.02);
+        }
+        .item {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1), inset 0 -4px 4px rgba(0,0,0,0.2);
+        }
+        .item:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+            z-index: 100;
+        }
+        .x-box {
+            background-color: #be123c;
+            border-radius: 12px;
+            font-family: monospace;
+            cursor: default;
+            position: relative;
+        }
+        .x-box.coefficient {
+            width: 80px;
+            font-size: 1.2rem;
+        }
+        .x-box .multiplier {
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            background: #7f1d1d;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        .gem-pos {
+            background-color: #16a34a;
+        }
+        .gem-neg {
+            background-color: #dc2626;
+        }
+        .feedback-modal {
+            transition: opacity 0.5s, transform 0.5s;
+        }
+        .feedback-modal.hidden {
+            opacity: 0;
+            transform: scale(0.8);
+            pointer-events: none;
+        }
+        .canceling {
+            animation: cancel-out 0.5s forwards;
+        }
+        @keyframes cancel-out {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        .level-indicator {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-amber-50 antialiased text-amber-900">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl text-center">
+        <header class="mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-4xl md:text-5xl font-bold text-amber-900">Équilibra-Maths ⚖️</h1>
+                <div class="level-indicator px-6 py-2 rounded-full text-white font-bold">
+                    Niveau <span id="current-level">1</span>
+                </div>
+            </div>
+            <p id="level-instruction" class="text-lg md:text-xl mt-2 text-amber-700">
+                Isole la boîte <span class="font-bold bg-rose-700 text-white px-2 py-1 rounded">x</span> pour trouver la solution !
+            </p>
+        </header>
+
+        <!-- Equation Display -->
+        <div id="equation-display" class="text-3xl font-bold my-6 p-4 bg-white/60 rounded-xl shadow-inner"></div>
+
+        <!-- Balance Visual -->
+        <div class="flex justify-center items-end relative mb-4">
+            <div id="left-side" class="equation-side" data-side="left"></div>
+            <div class="balance-beam absolute bottom-0"></div>
+            <div class="fulcrum"></div>
+            <div id="right-side" class="equation-side" data-side="right"></div>
+        </div>
+
+        <!-- Controls -->
+        <div class="mt-8 flex justify-center items-center gap-4">
+            <button id="new-equation-btn" class="px-8 py-3 bg-amber-500 text-white font-bold rounded-lg shadow-lg hover:bg-amber-600 transition-transform transform hover:scale-105">Nouvelle Équation</button>
+            <button id="reset-btn" class="px-6 py-2 bg-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-400 transition">Réinitialiser</button>
+            <button id="hint-btn" class="px-6 py-2 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 transition">Indice</button>
+        </div>
+
+        <!-- Hint Display -->
+        <div id="hint-display" class="hidden mt-4 p-4 bg-blue-100 text-blue-800 rounded-lg font-medium"></div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="feedback-modal hidden fixed inset-0 bg-black/50 flex justify-center items-center">
+        <div class="bg-white rounded-2xl p-8 text-center shadow-2xl transform transition-all max-w-sm w-full">
+            <div class="text-6xl mb-4">🎉</div>
+            <h2 class="text-3xl font-bold text-green-600 mb-2">Bravo !</h2>
+            <p class="text-lg text-gray-700 mb-4">Tu as trouvé la solution !</p>
+            <p id="solution-text" class="text-2xl font-bold bg-green-100 text-green-700 p-3 rounded-lg mb-4"></p>
+            <div id="next-level-info" class="hidden mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg">
+                <p class="font-bold">Niveau suivant débloqué !</p>
+                <p id="next-level-description"></p>
+            </div>
+            <button id="next-level-btn" class="mt-2 w-full px-6 py-3 bg-green-600 text-white font-bold rounded-lg shadow-lg hover:bg-green-700 transition">Continuer</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const leftSide = document.getElementById('left-side');
+        const rightSide = document.getElementById('right-side');
+        const newEquationBtn = document.getElementById('new-equation-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const equationDisplay = document.getElementById('equation-display');
+        const successModal = document.getElementById('success-modal');
+        const nextLevelBtn = document.getElementById('next-level-btn');
+        const solutionText = document.getElementById('solution-text');
+        const currentLevelSpan = document.getElementById('current-level');
+        const levelInstruction = document.getElementById('level-instruction');
+        const hintBtn = document.getElementById('hint-btn');
+        const hintDisplay = document.getElementById('hint-display');
+        const nextLevelInfo = document.getElementById('next-level-info');
+        const nextLevelDescription = document.getElementById('next-level-description');
+
+        // --- Game State ---
+        let gameState = {};
+        let draggedItem = null;
+        let currentLevel = 1;
+        let maxLevelUnlocked = 1;
+
+        // --- Level Configurations ---
+        const levelConfigs = {
+            1: {
+                name: "Équations simples",
+                instruction: "Isole la boîte <span class='font-bold bg-rose-700 text-white px-2 py-1 rounded'>x</span> pour trouver la solution !",
+                generate: () => {
+                    const x = Math.floor(Math.random() * 10) + 1;
+                    const b = Math.floor(Math.random() * 10) - 5;
+                    const c = x + b;
+                    return { a: 1, b, c, x_solution: x, original: { a: 1, b, c } };
+                }
+            },
+            2: {
+                name: "Multiples de x",
+                instruction: "Maintenant, tu as plusieurs <span class='font-bold bg-rose-700 text-white px-2 py-1 rounded'>x</span> !",
+                generate: () => {
+                    const a = Math.floor(Math.random() * 3) + 2; // 2, 3, or 4
+                    const x = Math.floor(Math.random() * 8) + 1;
+                    const b = Math.floor(Math.random() * 10) - 5;
+                    const c = a * x + b;
+                    return { a, b, c, x_solution: x, original: { a, b, c } };
+                }
+            },
+            3: {
+                name: "Équations à deux côtés",
+                instruction: "Des <span class='font-bold bg-rose-700 text-white px-2 py-1 rounded'>x</span> des deux côtés !",
+                generate: () => {
+                    const a = Math.floor(Math.random() * 3) + 1;
+                    const c = Math.floor(Math.random() * 3) + 1;
+                    const x = Math.floor(Math.random() * 8) + 1;
+                    const b = Math.floor(Math.random() * 10) - 5;
+                    const d = a * x + b - c * x;
+                    return { a, b, c, d, x_solution: x, original: { a, b, c, d } };
+                }
+            },
+            4: {
+                name: "Coefficients négatifs",
+                instruction: "Attention aux nombres négatifs !",
+                generate: () => {
+                    const a = Math.random() > 0.5 ? Math.floor(Math.random() * 3) + 1 : -(Math.floor(Math.random() * 3) + 1);
+                    const x = Math.floor(Math.random() * 8) + 1;
+                    const b = Math.floor(Math.random() * 20) - 10;
+                    const c = a * x + b;
+                    return { a, b, c, x_solution: x, original: { a, b, c } };
+                }
+            },
+            5: {
+                name: "Expert",
+                instruction: "Prêt pour le défi final ?",
+                generate: () => {
+                    const a = Math.random() > 0.5 ? Math.floor(Math.random() * 4) + 1 : -(Math.floor(Math.random() * 3) + 1);
+                    const c = Math.random() > 0.5 ? Math.floor(Math.random() * 4) + 1 : -(Math.floor(Math.random() * 3) + 1);
+                    const x = Math.floor(Math.random() * 10) + 1;
+                    const b = Math.floor(Math.random() * 20) - 10;
+                    const d = a * x + b - c * x;
+                    return { a, b, c, d, x_solution: x, original: { a, b, c, d } };
+                }
+            }
+        };
+
+        // --- Functions ---
+
+        function generateEquation() {
+            const config = levelConfigs[currentLevel];
+            gameState = config.generate();
+            renderEquation();
+            hideHint();
+        }
+
+        function renderEquation() {
+            leftSide.innerHTML = '';
+            rightSide.innerHTML = '';
+
+            // Render Left Side
+            if (gameState.a) {
+                createItem('x', gameState.a, leftSide);
+            }
+            if (gameState.b && gameState.b !== 0) {
+                createItem('gem', gameState.b, leftSide);
+            }
+
+            // Render Right Side
+            if (gameState.c && gameState.c !== 0) {
+                createItem('gem', gameState.c, rightSide);
+            }
+            if (gameState.d && gameState.d !== 0) {
+                createItem('gem', gameState.d, rightSide);
+            }
+
+            updateEquationDisplay();
+            addDragListeners();
+        }
+
+        function createItem(type, value, parent) {
+            if (type === 'x') {
+                for (let i = 0; i < Math.abs(value); i++) {
+                    const el = document.createElement('div');
+                    el.className = `item x-box ${Math.abs(value) > 1 ? 'coefficient' : ''}`;
+                    el.textContent = 'x';
+                    el.dataset.type = 'x';
+                    el.dataset.value = value > 0 ? 1 : -1;
+                    
+                    if (Math.abs(value) > 1) {
+                        const multiplier = document.createElement('span');
+                        multiplier.className = 'multiplier';
+                        multiplier.textContent = Math.abs(value);
+                        el.appendChild(multiplier);
+                    }
+                    
+                    parent.appendChild(el);
+                }
+            } else if (type === 'gem') {
+                const el = document.createElement('div');
+                el.className = `item ${value > 0 ? 'gem-pos' : 'gem-neg'}`;
+                el.textContent = value > 0 ? `+${value}` : `${value}`;
+                el.dataset.type = 'gem';
+                el.dataset.value = value;
+                el.draggable = true;
+                parent.appendChild(el);
+            }
+        }
+
+        function updateEquationDisplay() {
+            const leftX = Array.from(leftSide.querySelectorAll('[data-type="x"]')).length;
+            const leftGems = Array.from(leftSide.querySelectorAll('[data-type="gem"]'))
+                                .reduce((sum, el) => sum + parseInt(el.dataset.value), 0);
+
+            const rightX = Array.from(rightSide.querySelectorAll('[data-type="x"]')).length;
+            const rightGems = Array.from(rightSide.querySelectorAll('[data-type="gem"]'))
+                                .reduce((sum, el) => sum + parseInt(el.dataset.value), 0);
+
+            let leftStr = [];
+            if (leftX > 0) {
+                const coeff = leftX;
+                leftStr.push(`${coeff > 1 ? `${coeff}x` : 'x'}`);
+            }
+            if (leftGems > 0) leftStr.push(`+ ${leftGems}`);
+            if (leftGems < 0) leftStr.push(`- ${Math.abs(leftGems)}`);
+            if (leftStr.length === 0) leftStr.push('0');
+
+            let rightStr = [];
+            if (rightX > 0) {
+                const coeff = rightX;
+                rightStr.push(`${coeff > 1 ? `${coeff}x` : 'x'}`);
+            }
+            if (rightGems > 0) rightStr.push(`${rightGems}`);
+            if (rightGems < 0) rightStr.push(`${Math.abs(rightGems)}`);
+            if (rightStr.length === 0) rightStr.push('0');
+
+            equationDisplay.textContent = `${leftStr.join(' ')} = ${rightStr.join(' ')}`;
+        }
+
+        function addDragListeners() {
+            const items = document.querySelectorAll('[draggable="true"]');
+            items.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('touchstart', handleTouchStart, {passive: false});
+            });
+
+            const sides = [leftSide, rightSide];
+            sides.forEach(side => {
+                side.addEventListener('dragover', handleDragOver);
+                side.addEventListener('dragleave', handleDragLeave);
+                side.addEventListener('drop', handleDrop);
+            });
+            
+            document.addEventListener('touchmove', handleTouchMove, {passive: false});
+            document.addEventListener('touchend', handleTouchEnd);
+        }
+
+        function handleDragStart(e) {
+            draggedItem = e.target;
+            setTimeout(() => e.target.style.opacity = '0.5', 0);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        }
+
+        function handleDragLeave() {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            if (this !== draggedItem.parentElement) {
+                const value = parseInt(draggedItem.dataset.value);
+                createItem('gem', -value, this);
+                draggedItem.parentElement.removeChild(draggedItem);
+                simplifyAndCheck();
+            }
+            draggedItem.style.opacity = '1';
+            draggedItem = null;
+        }
+
+        let touchStartX, touchStartY, originalParent, clone;
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            draggedItem = e.target;
+            originalParent = draggedItem.parentElement;
+            
+            clone = draggedItem.cloneNode(true);
+            clone.style.position = 'absolute';
+            clone.style.pointerEvents = 'none';
+            clone.style.opacity = '0.8';
+            document.body.appendChild(clone);
+
+            const touch = e.touches[0];
+            moveClone(touch.clientX, touch.clientY);
+            draggedItem.style.opacity = '0.5';
+        }
+
+        function handleTouchMove(e) {
+            if (!draggedItem) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            moveClone(touch.clientX, touch.clientY);
+
+            [leftSide, rightSide].forEach(side => {
+                const rect = side.getBoundingClientRect();
+                if (touch.clientX > rect.left && touch.clientX < rect.right &&
+                    touch.clientY > rect.top && touch.clientY < rect.bottom) {
+                    side.classList.add('drag-over');
+                } else {
+                    side.classList.remove('drag-over');
+                }
+            });
+        }
+
+        function moveClone(x, y) {
+            if (clone) {
+              clone.style.left = `${x - clone.offsetWidth / 2}px`;
+              clone.style.top = `${y - clone.offsetHeight / 2}px`;
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!draggedItem) return;
+
+            document.body.removeChild(clone);
+            clone = null;
+            
+            const touch = e.changedTouches[0];
+            const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.equation-side');
+
+            [leftSide, rightSide].forEach(side => side.classList.remove('drag-over'));
+
+            if (dropTarget && dropTarget !== originalParent) {
+                const value = parseInt(draggedItem.dataset.value);
+                createItem('gem', -value, dropTarget);
+                originalParent.removeChild(draggedItem);
+                simplifyAndCheck();
+            } else {
+                 draggedItem.style.opacity = '1';
+            }
+            draggedItem = null;
+        }
+
+        function simplifyAndCheck() {
+            setTimeout(() => {
+                simplifySide(leftSide);
+                simplifySide(rightSide);
+            }, 100);
+
+            setTimeout(checkWinCondition, 700);
+        }
+
+        function simplifySide(side) {
+            const gems = Array.from(side.querySelectorAll('[data-type="gem"]'));
+            const gemValues = gems.map(g => parseInt(g.dataset.value));
+            
+            let simplified = false;
+            do {
+                simplified = false;
+                for (let i = 0; i < gemValues.length; i++) {
+                    for (let j = i + 1; j < gemValues.length; j++) {
+                        if (gemValues[i] + gemValues[j] === 0) {
+                            gems[i].classList.add('canceling');
+                            gems[j].classList.add('canceling');
+                            
+                            setTimeout(() => {
+                                gems[i].remove();
+                                gems[j].remove();
+                            }, 450);
+
+                            gemValues.splice(j, 1);
+                            gemValues.splice(i, 1);
+                            gems.splice(j, 1);
+                            gems.splice(i, 1);
+                            simplified = true;
+                            break;
+                        }
+                    }
+                    if(simplified) break;
+                }
+            } while (simplified);
+
+            const remainingValue = gemValues.reduce((sum, val) => sum + val, 0);
+            gems.forEach(g => g.remove());
+            if (remainingValue !== 0) {
+                createItem('gem', remainingValue, side);
+            }
+            
+            updateEquationDisplay();
+            addDragListeners();
+        }
+
+        function checkWinCondition() {
+            const leftXCount = leftSide.querySelectorAll('[data-type="x"]').length;
+            const leftGemCount = leftSide.querySelectorAll('[data-type="gem"]').length;
+            const rightXCount = rightSide.querySelectorAll('[data-type="x"]').length;
+            const rightGemCount = rightSide.querySelectorAll('[data-type="gem"]').length;
+
+            const isSolved = 
+                (leftXCount === 1 && leftGemCount === 0 && rightXCount === 0 && rightGemCount === 1) ||
+                (rightXCount === 1 && rightGemCount === 0 && leftXCount === 0 && leftGemCount === 1);
+            
+            if (isSolved) {
+                const solutionSide = leftXCount === 1 ? rightSide : leftSide;
+                const solutionValue = solutionSide.querySelector('[data-type="gem"]').dataset.value;
+                
+                if (Math.abs(parseInt(solutionValue)) === Math.abs(gameState.x_solution)) {
+                    showSuccessModal(solutionValue);
+                }
+            }
+        }
+        
+        function showSuccessModal(solution) {
+            solutionText.textContent = `x = ${solution}`;
+            
+            if (currentLevel < 5 && currentLevel >= maxLevelUnlocked) {
+                maxLevelUnlocked = currentLevel + 1;
+                nextLevelInfo.classList.remove('hidden');
+                nextLevelDescription.textContent = levelConfigs[maxLevelUnlocked].name;
+            } else {
+                nextLevelInfo.classList.add('hidden');
+            }
+            
+            successModal.classList.remove('hidden');
+        }
+        
+        function hideSuccessModal() {
+            successModal.classList.add('hidden');
+        }
+
+        function reset() {
+            gameState = { ...gameState.original };
+            renderEquation();
+            hideHint();
+        }
+
+        function showHint() {
+            const hintDisplay = document.getElementById('hint-display');
+            let hint = '';
+            
+            switch(currentLevel) {
+                case 1:
+                    hint = 'Déplace les nombres de l\'autre côté de la balance pour isoler x.';
+                    break;
+                case 2:
+                    hint = 'Tu as plusieurs x ! Déplace-les tous du même côté.';
+                    break;
+                case 3:
+                    hint = 'Déplace tous les x d\'un côté et tous les nombres de l\'autre.';
+                    break;
+                case 4:
+                    hint = 'Attention : un nombre négatif change de signe quand il traverse la balance !';
+                    break;
+                case 5:
+                    hint = 'Réfléchis bien à chaque mouvement. La solution est là !';
+                    break;
+            }
+            
+            hintDisplay.textContent = hint;
+            hintDisplay.classList.remove('hidden');
+        }
+
+        function hideHint() {
+            hintDisplay.classList.add('hidden');
+        }
+
+        function nextLevel() {
+            if (currentLevel < 5) {
+                currentLevel++;
+                currentLevelSpan.textContent = currentLevel;
+                levelInstruction.innerHTML = levelConfigs[currentLevel].instruction;
+            }
+            hideSuccessModal();
+            generateEquation();
+        }
+
+        // --- Event Listeners ---
+        newEquationBtn.addEventListener('click', () => {
+            hideSuccessModal();
+            generateEquation();
+        });
+        resetBtn.addEventListener('click', reset);
+        nextLevelBtn.addEventListener('click', nextLevel);
+        hintBtn.addEventListener('click', showHint);
+
+        // --- Initial Load ---
+        generateEquation();
+    </script>
+</body>
+</html>
