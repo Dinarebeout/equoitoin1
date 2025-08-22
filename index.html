@@ -1,177 +1,508 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Équilibra-Maths</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>مغامرة المعادلات</title>
     <style>
-        /* Styles inchangés de la version précédente, avec ajouts pour les nouveaux boutons */
-        .operation-btn {
-            px-4 py-2 bg-purple-500 text-white font-bold rounded-lg hover:bg-purple-600 transition;
-            display: none; /* Affichés seulement quand nécessaires */
+        /* CSS styling for the enhanced game */
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-bg: #f8f9fa;
+            --dark-text: #343a40;
+            --border-color: #dee2e6;
         }
-        .item.dividing {
-            animation: divide-anim 0.5s forwards;
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #eef5ff;
+            color: var(--dark-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            user-select: none;
         }
-        @keyframes divide-anim {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(0.5); opacity: 0.7; }
+
+        #game-wrapper {
+            width: 100%;
+            max-width: 900px;
+            margin: 20px;
         }
+
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        #start-screen, #end-screen {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            font-family: 'Cairo', sans-serif;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            margin: 10px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        button.secondary {
+            background-color: var(--success-color);
+        }
+        button.secondary:hover {
+             background-color: #218838;
+        }
+
+        #game-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        #game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #level-display {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: var(--secondary-color);
+            background: #f1f1f1;
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+        
+        #equation-display {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--danger-color);
+            letter-spacing: 2px;
+        }
+
+        #balance-scale {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            margin-bottom: 20px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><path d="M50 0 L40 10 H60 Z" fill="%23a9a9a9"/><rect x="48" y="10" width="4" height="30" fill="%23a9a9a9"/><path d="M10 40 H90 L95 45 H5 Z" fill="%238b4513" stroke="%23333" stroke-width="1"/></svg>') no-repeat center bottom;
+            background-size: 100% 60px;
+            padding-bottom: 60px;
+            height: 300px;
+        }
+
+        .side {
+            width: 48%;
+            min-height: 250px;
+            background-color: var(--light-bg);
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: flex-start;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+        
+        .side.drag-over {
+            background-color: #d4edda;
+            border-color: var(--success-color);
+            border-style: solid;
+        }
+
+        .item {
+            font-size: 2.5em;
+            cursor: pointer;
+            transition: transform 0.2s ease-out, opacity 0.3s;
+            animation: fadeIn 0.5s;
+        }
+        .item.dragging {
+            opacity: 0.5;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+        .item.disappear { animation: fadeOut 0.3s forwards; }
+        @keyframes fadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0); } }
+
+        .x-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 123, 255, 0.1);
+            border: 1px solid rgba(0, 123, 255, 0.3);
+            border-radius: 10px;
+            padding: 5px;
+            margin: 5px;
+        }
+
+        #toolbox {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fdfdfd;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        #toolbox .tool-group {
+            margin: 0 20px;
+        }
+        #toolbox .item { margin: 0 10px; }
+
+        #message {
+            margin-top: 20px;
+            font-size: 1.4em;
+            font-weight: bold;
+            height: 35px;
+            transition: color 0.3s;
+        }
+        #message.success { color: var(--success-color); }
+        #message.error { color: var(--danger-color); }
+
+        #controls {
+            margin-top: 10px;
+        }
+
     </style>
 </head>
-<body class="bg-amber-50 antialiased text-amber-900">
+<body>
 
-    <div class="container mx-auto p-4 md:p-8 max-w-4xl text-center">
-        <header class="mb-8">
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-4xl md:text-5xl font-bold text-amber-900">Équilibra-Maths ⚖️</h1>
-                <div class="level-indicator px-6 py-2 rounded-full text-white font-bold">
-                    Niveau <span id="current-level">1</span>
+    <div id="game-wrapper">
+        <div id="start-screen" class="screen active">
+            <h1>🚀 مغامرة المعادلات 🚀</h1>
+            <p>هل أنت مستعد لتصبح خبيراً في حل المعادلات بطريقة ممتعة؟ <br> مهمتك هي عزل الصندوق السحري 📦 في كفة واحدة من الميزان!</p>
+            <button id="start-btn">ابدأ اللعبة</button>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <div id="game-container">
+                <div id="game-header">
+                    <div id="level-display"></div>
+                    <div id="equation-display"></div>
+                </div>
+                
+                <div id="balance-scale">
+                    <div id="left-side" class="side"></div>
+                    <div id="right-side" class="side"></div>
+                </div>
+
+                <div id="toolbox">
+                    <div class="tool-group">
+                        <span>أضف للكفتين:</span>
+                        <span class="item" draggable="true" data-type="1">🍎</span>
+                        <span class="item" draggable="true" data-type="-1">🍏</span>
+                        <span class="item" draggable="true" data-type="x">📦</span>
+                    </div>
+                    <div class="tool-group">
+                        <span>أدوات خاصة:</span>
+                        <span id="divide-tool" class="item" title="قسّم الكفتين على 2">➗</span>
+                    </div>
+                </div>
+
+                <div id="message"></div>
+                <div id="controls">
+                    <button id="check-btn">تحقق!</button>
+                    <button id="next-level-btn" style="display:none;" class="secondary">المرحلة التالية &larr;</button>
                 </div>
             </div>
-            <p id="level-instruction" class="text-lg md:text-xl mt-2 text-amber-700">
-                Isole la boîte <span class="font-bold bg-rose-700 text-white px-2 py-1 rounded">x</span> pour trouver la solution !
-            </p>
-        </header>
-
-        <!-- Equation Display -->
-        <div id="equation-display" class="text-3xl font-bold my-6 p-4 bg-white/60 rounded-xl shadow-inner"></div>
-
-        <!-- Balance Visual -->
-        <div class="flex justify-center items-end relative mb-4">
-            <div id="left-side" class="equation-side" data-side="left"></div>
-            <div class="balance-beam absolute bottom-0"></div>
-            <div class="fulcrum"></div>
-            <div id="right-side" class="equation-side" data-side="right"></div>
         </div>
 
-        <!-- Controls -->
-        <div class="mt-8 flex justify-center items-center gap-4">
-            <button id="new-equation-btn" class="px-8 py-3 bg-amber-500 text-white font-bold rounded-lg shadow-lg hover:bg-amber-600 transition-transform transform hover:scale-105">Nouvelle Équation</button>
-            <button id="reset-btn" class="px-6 py-2 bg-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-400 transition">Réinitialiser</button>
-            <button id="hint-btn" class="px-6 py-2 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 transition">Indice</button>
-            <button id="divide-btn" class="operation-btn">Diviser par <span id="divide-value">2</span></button>
-            <button id="multiply-btn" class="operation-btn">Multiplier par <span id="multiply-value">2</span></button>
-        </div>
-
-        <!-- Hint Display -->
-        <div id="hint-display" class="hidden mt-4 p-4 bg-blue-100 text-blue-800 rounded-lg font-medium"></div>
-    </div>
-
-    <!-- Success Modal -->
-    <div id="success-modal" class="feedback-modal hidden fixed inset-0 bg-black/50 flex justify-center items-center">
-        <div class="bg-white rounded-2xl p-8 text-center shadow-2xl transform transition-all max-w-sm w-full">
-            <div class="text-6xl mb-4">🎉</div>
-            <h2 class="text-3xl font-bold text-green-600 mb-2">Bravo !</h2>
-            <p class="text-lg text-gray-700 mb-4">Tu as trouvé la solution !</p>
-            <p id="solution-text" class="text-2xl font-bold bg-green-100 text-green-700 p-3 rounded-lg mb-4"></p>
-            <div id="next-level-info" class="hidden mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg">
-                <p class="font-bold">Niveau suivant débloqué !</p>
-                <p id="next-level-description"></p>
-            </div>
-            <button id="next-level-btn" class="mt-2 w-full px-6 py-3 bg-green-600 text-white font-bold rounded-lg shadow-lg hover:bg-green-700 transition">Continuer</button>
+        <div id="end-screen" class="screen">
+            <h2>🎉 تهانينا! لقد أتقنت كل المعادلات! 🎉</h2>
+            <p>لقد أصبحت الآن بطلاً في موازنة المعادلات وحلها. عمل رائع!</p>
+            <button id="restart-btn">العب مرة أخرى</button>
         </div>
     </div>
 
     <script>
-        // --- DOM Elements (ajouts pour les nouveaux boutons) ---
-        const divideBtn = document.getElementById('divide-btn');
-        const multiplyBtn = document.getElementById('multiply-btn');
-        const divideValue = document.getElementById('divide-value');
-        const multiplyValue = document.getElementById('multiply-value');
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- GAME CONFIGURATION ---
+        const EMOJIS = {
+            BOX: '📦',
+            POSITIVE: '🍎',
+            NEGATIVE: '🍏'
+        };
 
-        // --- Game State (ajout de variables pour opérations) ---
-        let currentDivider = 2; // Valeur par défaut, ajustée dynamiquement
-        let moveCount = 0;
+        const LEVELS = [
+            // Introduction to balancing
+            { eq: 'x + 1 = 3', state: { left: [['x'], [1]], right: [[1], [1], [1]] } },
+            { eq: 'x - 2 = 1', state: { left: [['x'], [-1], [-1]], right: [[1]] } },
+            // Variables on both sides
+            { eq: '2x = x + 3', state: { left: [['x'], ['x']], right: [['x'], [1], [1], [1]] } },
+            { eq: '3x + 1 = x + 5', state: { left: [['x'], ['x'], ['x'], [1]], right: [['x'], [1], [1], [1], [1]] } },
+            // Multiplication/Division
+            { eq: '2x = 4', state: { left: [['x', 'x']], right: [[1, 1], [1, 1]] } },
+            { eq: '3x = 6', state: { left: [['x', 'x', 'x']], right: [[1, 1, 1], [1, 1, 1]] } },
+        ];
 
-        // --- Level Configurations (ajout de niveaux 6 et 7) ---
-        const levelConfigs = {
-            // Niveaux 1-5 inchangés de la version précédente
-            1: { /* ... */ },
-            2: { /* ... */ },
-            3: { /* ... */ },
-            4: { /* ... */ },
-            5: { /* ... */ },
-            6: {
-                name: "Division simple",
-                instruction: "Utilise le bouton Diviser pour isoler x !",
-                generate: () => {
-                    const a = Math.floor(Math.random() * 4) + 2; // Coefficient 2-5
-                    const x = Math.floor(Math.random() * 10) + 1;
-                    const c = a * x;
-                    return { a, b: 0, c, x_solution: x, original: { a, b: 0, c } };
-                }
-            },
-            7: {
-                name: "Fractions et multiplication",
-                instruction: "Multiplie ou divise pour gérer les fractions !",
-                generate: () => {
-                    const a = Math.random() > 0.5 ? 1 : 0.5; // Coefficient fractionnaire
-                    const x = Math.floor(Math.random() * 10) + 1;
-                    const b = Math.floor(Math.random() * 10) - 5;
-                    const c = a * x + b;
-                    return { a, b, c, x_solution: x, original: { a, b, c } };
-                }
+        // --- DOM ELEMENTS ---
+        const screens = {
+            start: document.getElementById('start-screen'),
+            game: document.getElementById('game-screen'),
+            end: document.getElementById('end-screen'),
+        };
+        const leftSide = document.getElementById('left-side');
+        const rightSide = document.getElementById('right-side');
+        const messageEl = document.getElementById('message');
+        const levelDisplay = document.getElementById('level-display');
+        const equationDisplay = document.getElementById('equation-display');
+        const checkBtn = document.getElementById('check-btn');
+        const nextLevelBtn = document.getElementById('next-level-btn');
+        
+        // --- GAME STATE ---
+        let currentLevel = 0;
+        let draggedElement = null;
+
+        // --- FUNCTIONS ---
+        const switchScreen = (screenName) => {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenName].classList.add('active');
+        };
+
+        const createItem = (itemData) => {
+            const el = document.createElement('div');
+            if (Array.isArray(itemData) && itemData.length > 1) {
+                // It's a group (e.g., 2x or a group of numbers)
+                el.classList.add('item', 'x-group');
+                itemData.forEach(subItem => {
+                    const subEl = document.createElement('span');
+                    subEl.textContent = subItem === 'x' ? EMOJIS.BOX : (subItem > 0 ? EMOJIS.POSITIVE : EMOJIS.NEGATIVE);
+                    el.appendChild(subEl);
+                });
+                el.dataset.type = 'group';
+                el.dataset.value = JSON.stringify(itemData);
+            } else {
+                // It's a single item
+                const value = Array.isArray(itemData) ? itemData[0] : itemData;
+                el.classList.add('item');
+                el.dataset.type = value;
+                if (value === 'x') el.textContent = EMOJIS.BOX;
+                else if (value === 1) el.textContent = EMOJIS.POSITIVE;
+                else if (value === -1) el.textContent = EMOJIS.NEGATIVE;
+            }
+            el.draggable = true;
+            return el;
+        };
+        
+        const renderBoard = () => {
+            const level = LEVELS[currentLevel];
+            levelDisplay.textContent = `المرحلة ${currentLevel + 1}/${LEVELS.length}`;
+            equationDisplay.textContent = level.eq;
+            
+            [leftSide, rightSide].forEach(side => side.innerHTML = '');
+            messageEl.textContent = '';
+            checkBtn.style.display = 'inline-block';
+            nextLevelBtn.style.display = 'none';
+
+            level.state.left.forEach(item => leftSide.appendChild(createItem(item)));
+            level.state.right.forEach(item => rightSide.appendChild(createItem(item)));
+        };
+
+        const simplifySide = (side) => {
+            const items = Array.from(side.children);
+            const positives = items.filter(i => i.dataset.type === '1');
+            const negatives = items.filter(i => i.dataset.type === '-1');
+            const pairs = Math.min(positives.length, negatives.length);
+
+            if (pairs > 0) {
+                const toRemove = [
+                    ...positives.slice(0, pairs),
+                    ...negatives.slice(0, pairs)
+                ];
+                toRemove.forEach(item => {
+                    item.classList.add('disappear');
+                    item.addEventListener('animationend', () => item.remove());
+                });
             }
         };
 
-        // --- Fonctions modifiées/ajoutées ---
-
-        function renderEquation() {
-            // Render inchangé, mais ajout de check pour activer boutons
-            // ...
-            checkForOperations();
-        }
-
-        function checkForOperations() {
-            // Vérifie si division/multiplication est nécessaire
-            const leftCoeff = leftSide.querySelectorAll('[data-type="x"]').length;
-            const rightCoeff = rightSide.querySelectorAll('[data-type="x"]').length;
-            
-            if (leftCoeff > 1 || rightCoeff > 1) {
-                currentDivider = Math.max(leftCoeff, rightCoeff);
-                divideValue.textContent = currentDivider;
-                divideBtn.style.display = 'inline-block';
-            } else {
-                divideBtn.style.display = 'none';
-            }
-            
-            // Pour fractions (niveau 7), activer multiply si coefficient <1
-            multiplyBtn.style.display = 'none'; // À implémenter plus en détail si besoin
-        }
-
-        function applyDivision(divider) {
-            // Applique la division sur les deux côtés
-            [leftSide, rightSide].forEach(side => {
-                const items = side.querySelectorAll('.item');
-                items.forEach(item => {
-                    item.classList.add('dividing');
-                    setTimeout(() => {
-                        const newValue = parseInt(item.dataset.value) / divider;
-                        item.dataset.value = newValue;
-                        item.textContent = newValue > 0 ? `+${newValue}` : `${newValue}`;
-                        item.classList.remove('dividing');
-                    }, 500);
-                });
+        const calculateSideValue = (side) => {
+            let xCount = 0;
+            let numValue = 0;
+            side.querySelectorAll('.item').forEach(item => {
+                const type = item.dataset.type;
+                if (type === 'x') xCount++;
+                else if (type === '1') numValue++;
+                else if (type === '-1') numValue--;
+                else if (type === 'group') {
+                    const groupData = JSON.parse(item.dataset.value);
+                    groupData.forEach(val => {
+                        if (val === 'x') xCount++;
+                        else numValue += val;
+                    });
+                }
             });
-            moveCount++;
-            simplifyAndCheck();
-            checkForOperations();
-        }
+            return { xCount, numValue };
+        };
 
-        // --- Event Listeners ajoutés ---
-        divideBtn.addEventListener('click', () => applyDivision(currentDivider));
-        multiplyBtn.addEventListener('click', () => { /* Logique similaire pour multiplication */ });
+        const checkSolution = () => {
+            const left = calculateSideValue(leftSide);
+            const right = calculateSideValue(rightSide);
+            
+            // Winning condition: only one 'x' on one side, and only numbers on the other
+            if ((left.xCount === 1 && left.numValue === 0 && right.xCount === 0) ||
+                (right.xCount === 1 && right.numValue === 0 && left.xCount === 0)) {
+                
+                // Let's find the correct answer for the equation
+                const eq = LEVELS[currentLevel].eq;
+                let solution;
+                // This is a simplified solver for demo purposes
+                // For 'ax+b=cx+d', solution is (d-b)/(a-c)
+                // For this game's scope, we can pre-calculate or use a simple logic
+                if (eq === 'x + 1 = 3') solution = 2;
+                else if (eq === 'x - 2 = 1') solution = 3;
+                else if (eq === '2x = x + 3') solution = 3;
+                else if (eq === '3x + 1 = x + 5') solution = 2;
+                else if (eq === '2x = 4') solution = 2;
+                else if (eq === '3x = 6') solution = 2;
 
-        // --- Autres fonctions inchangées, avec ajustements mineurs pour moveCount ---
+                const playerSolution = (left.xCount === 1) ? right.numValue : left.numValue;
 
-        // --- Initial Load ---
-        generateEquation();
+                if (playerSolution === solution) {
+                    messageEl.textContent = '🎉 رائع! إجابة صحيحة.';
+                    messageEl.className = 'success';
+                    checkBtn.style.display = 'none';
+                    if (currentLevel < LEVELS.length - 1) {
+                        nextLevelBtn.style.display = 'inline-block';
+                    } else {
+                        setTimeout(() => switchScreen('end'), 1500);
+                    }
+                } else {
+                    messageEl.textContent = 'أوشكت على الحل! قيمة x غير صحيحة.';
+                    messageEl.className = 'error';
+                }
+            } else {
+                messageEl.textContent = 'الهدف هو عزل 📦 واحد فقط. استمر بالمحاولة!';
+                messageEl.className = 'error';
+            }
+        };
+
+        const divideSide = (side, divisor) => {
+            const content = Array.from(side.children);
+            side.innerHTML = ''; // Clear the side
+            
+            const groups = content.map(item => {
+                if (item.dataset.type === 'group') return JSON.parse(item.dataset.value);
+                return [item.dataset.type === 'x' ? 'x' : parseInt(item.dataset.type)];
+            }).flat();
+
+            const newGroupSize = groups.length / divisor;
+            if (!Number.isInteger(newGroupSize)) return; // Cannot divide evenly
+
+            for (let i = 0; i < divisor; i++) {
+                const newGroupData = groups.slice(i * newGroupSize, (i + 1) * newGroupSize);
+                side.appendChild(createItem(newGroupData));
+            }
+            // We only want to keep one group
+            setTimeout(() => {
+                while(side.children.length > 1) {
+                    side.lastChild.classList.add('disappear');
+                    side.lastChild.addEventListener('animationend', (e) => e.target.remove());
+                }
+            }, 300);
+        };
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('start-btn').addEventListener('click', () => {
+            switchScreen('game');
+            renderBoard();
+        });
+
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            currentLevel = 0;
+            switchScreen('start');
+        });
+
+        nextLevelBtn.addEventListener('click', () => {
+            currentLevel++;
+            renderBoard();
+        });
+
+        checkBtn.addEventListener('click', checkSolution);
+        
+        document.getElementById('divide-tool').addEventListener('click', () => {
+            // Simple division by 2 for this demo
+            divideSide(leftSide, 2);
+            divideSide(rightSide, 2);
+        });
+
+        // Drag & Drop Logic
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('item')) {
+                draggedElement = e.target;
+                setTimeout(() => e.target.classList.add('dragging'), 0);
+            }
+        });
+
+        document.addEventListener('dragend', (e) => {
+            if (draggedElement) {
+                draggedElement.classList.remove('dragging');
+                draggedElement = null;
+            }
+        });
+
+        [leftSide, rightSide].forEach(side => {
+            side.addEventListener('dragover', e => {
+                e.preventDefault();
+                side.classList.add('drag-over');
+            });
+            side.addEventListener('dragleave', () => side.classList.remove('drag-over'));
+            side.addEventListener('drop', e => {
+                e.preventDefault();
+                side.classList.remove('drag-over');
+                if (!draggedElement) return;
+
+                const type = draggedElement.dataset.type;
+                const isFromToolbox = draggedElement.parentElement.id === 'toolbox' || draggedElement.parentElement.classList.contains('tool-group');
+
+                if (isFromToolbox) {
+                    // Add to both sides to keep balance
+                    leftSide.appendChild(createItem(type === 'x' ? 'x' : parseInt(type)));
+                    rightSide.appendChild(createItem(type === 'x' ? 'x' : parseInt(type)));
+                } else {
+                    // Move item from one side to the other (not standard algebra, but can be a feature)
+                    // For now, let's stick to adding from toolbox. This can be enhanced later.
+                }
+
+                // Simplify both sides after any change
+                setTimeout(() => {
+                    simplifySide(leftSide);
+                    simplifySide(rightSide);
+                }, 100);
+            });
+        });
+
+    });
     </script>
 </body>
 </html>
-
