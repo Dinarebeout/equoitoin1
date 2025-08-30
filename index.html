@@ -1,437 +1,241 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>DragonBox Drag & Drop - Équations 1er degré</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لعبة المعادلات - خطوة بخطوة</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body {
-      background: linear-gradient(135deg, #a2d5f2 70%, #ffddcc 100%);
-      font-family: 'Comic Sans MS', 'Arial', sans-serif;
-      margin: 0; padding: 0;
+    :root {
+      --primary: #4f46e5;
+      --success: #22c55e;
+      --error: #ef4444;
+      --bg: #f9fafb;
+      --card: #ffffff;
+      --text: #111827;
     }
-    .container {
-      max-width: 480px;
-      margin: 40px auto;
-      background: #fffbea;
-      padding: 30px 25px 25px 25px;
-      border-radius: 25px;
-      box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10);
-      text-align: center;
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+    body { background: var(--bg); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; align-items: center; padding: 2rem; }
+    header { width: 100%; max-width: 600px; text-align: center; margin-bottom: 1.5rem; }
+    #progress-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 1rem; }
+    #progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
+    #game-area { background: var(--card); border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.05); padding: 2rem; width: 100%; max-width: 600px; text-align: center; }
+    #equation-svg { width: 100%; height: 120px; margin-bottom: 1.5rem; }
+    .btn { background: var(--primary); color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; cursor: pointer; margin: 0.5rem; transition: background 0.2s; }
+    .btn:hover { background: #4338ca; }
+    #hint-box { margin-top: 1rem; font-size: 0.9rem; color: #6b7280; }
+    footer { margin-top: 2rem; font-size: 0.8rem; color: #9ca3af; }
+    
+    /* إضافات CSS للوحدات */
+    .tile-group { display: inline-flex; align-items: center; gap: 0.5rem; }
+    .tile { display: inline-block; width: 50px; height: 50px; border-radius: 8px; font-size: 24px; line-height: 50px; text-align: center; }
+    .box  { background: #f97316; color: #fff; font-weight: bold; }      /* x */
+    .ball { background: #3b82f6; color: #fff; border-radius: 50%; }     /* عدد */
+    .op   { font-size: 28px; margin: 0 0.25rem; }
+    .equals { font-size: 32px; margin: 0 1rem; }
+    
+    /* إضافات السحب والإفلات */
+    .draggable { cursor: grab; transition: transform 0.2s; }
+    .draggable:active { cursor: grabbing; transform: scale(1.05); }
+    .drop-zone { min-height: 60px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0.5rem 0; }
+    .drop-zone.highlight { border-color: var(--primary); background: #eef2ff; }
+    
+    /* تأثيرات UX */
+    @keyframes pulse {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.08); background: var(--success); }
+      100% { transform: scale(1); }
     }
-    h1 {
-      color: #fa7c92;
-      font-size: 2rem;
-      margin-bottom: 12px;
-      letter-spacing: 1px;
-      text-shadow: 0 2px 0 #ffd6e0;
-    }
-    .level {
-      font-size: 1.1rem;
-      color: #41729f;
-      margin-bottom: 10px;
-    }
-    .progress-bar {
-      width: 100%;
-      background: #e1e1e1;
-      height: 14px;
-      border-radius: 7px;
-      overflow: hidden;
-      margin: 14px 0 20px 0;
-    }
-    .progress {
-      background: linear-gradient(90deg,#fa7c92,#42c6a6);
-      height: 100%;
-      width: 0%;
-      border-radius: 7px;
-      transition: width 0.3s;
-    }
-    .equation-zone {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 12px;
-      margin: 18px 0 10px 0;
-    }
-    .side {
-      display: flex;
-      gap: 8px;
-      min-width: 70px;
-      min-height: 60px;
-      align-items: center;
-      justify-content: center;
-      border-radius: 12px;
-      background: #f7e1e1;
-      padding: 8px 12px;
-      box-shadow: 0 2px 8px rgba(250,124,146,0.07);
-    }
-    .side.drop-hover {
-      background: #d0f5ec;
-      border: 2px dashed #42c6a6;
-    }
-    .box {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 45px;
-      min-height: 45px;
-      padding: 10px 15px;
-      background: linear-gradient(135deg, #fa7c92 65%, #ffd6e0 100%);
-      color: #fff;
-      font-size: 1.4rem;
-      font-weight: bold;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(250,124,146,0.10);
-      margin: 0 4px;
-      transition: opacity 0.4s, transform 0.4s;
-      position: relative;
-      cursor: grab;
-      user-select: none;
-    }
-    .box.x {
-      background: linear-gradient(135deg,#42c6a6 65%,#a2d5f2 100%);
-      color: #fff;
-      font-size: 1.5rem;
-      font-weight: bold;
-    }
-    .box.hide {
-      opacity: 0.2;
-      transform: scale(0.5);
-      pointer-events: none;
-    }
-    .eqsign {
-      font-size: 2.2rem;
-      padding: 0 15px;
-      color: #f15a59;
-    }
-    .hint {
-      color: #42c6a6;
-      font-size: 1rem;
-      margin: 10px 0 7px 0;
-      min-height: 24px;
-      font-style: italic;
-    }
-    .step {
-      margin-top: 7px;
-      color: #fa7c92;
-      font-size: 0.94rem;
-      min-height: 1.3em;
-    }
-    .input-zone {
-      margin-top: 12px;
-    }
-    input[type="number"] {
-      padding: 7px 10px;
-      font-size: 1.1rem;
-      border-radius: 7px;
-      border: 2px solid #a2d5f2;
-      outline: none;
-      width: 85px;
-      margin-right: 8px;
-    }
-    button#verif {
-      background: linear-gradient(135deg, #42c6a6 70%, #a2d5f2 100%);
-      border: none;
-      color: #fff;
-      font-size: 1.02rem;
-      font-weight: bold;
-      padding: 9px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(66,198,166,0.07);
-      transition: background 0.2s;
-    }
-    button#verif:hover {
-      background: linear-gradient(135deg, #22b7a4 70%, #7ed6df 100%);
-    }
-    .score {
-      font-size: 1.05rem;
-      color: #41729f;
-      margin: 14px 0 0 0;
-    }
-    .success {
-      color: #42c6a6;
-      font-weight: bold;
-      font-size: 1.2rem;
-      margin-top: 12px;
-    }
-    .error {
-      color: #fa7c92;
-      font-weight: bold;
-      font-size: 1.1rem;
-      margin-top: 12px;
-    }
-    .footer {
-      text-align: center;
-      font-size: 0.8rem;
-      color: #a2d5f2;
-      margin-top: 30px;
-    }
+    .correct-drop { animation: pulse 0.4s ease; }
+    .hidden-value { filter: blur(3px) grayscale(1); transition: filter 0.4s; }
+    .revealed     { filter: none; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>DragonBox Drag & Drop 🐲</h1>
-    <div class="level">Niveau <span id="level">1</span> / <span id="max-level">8</span></div>
-    <div class="progress-bar">
-      <div class="progress" id="progress"></div>
+  <header>
+    <h1>لعبة المعادلات</h1>
+    <div id="progress-bar"><div id="progress-fill"></div></div>
+  </header>
+
+  <main id="game-area">
+    <svg id="equation-svg" viewBox="0 0 600 120">
+      <!-- النص الأصلي مخفي -->
+      <text id="equation-text" x="300" y="70" font-size="28" text-anchor="middle" fill="#111" style="display:none;">2x + 3 = 7</text>
+    </svg>
+    
+    <div id="equation-visual" style="display: flex; justify-content: center; gap: 0.5rem; align-items: center; margin-bottom: 1rem;">
+      <!-- المناطق الجانبية -->
+      <div class="drop-zone" id="left-zone" data-side="left"></div>
+      <span class="equals">=</span>
+      <div class="drop-zone" id="right-zone" data-side="right"></div>
     </div>
-    <div class="equation-zone" id="equation-zone"></div>
-    <div class="step" id="step"></div>
-    <div class="hint" id="hint"></div>
-    <div class="input-zone">
-      <input type="number" id="response" placeholder="Ta réponse" />
-      <button id="verif" onclick="checkAnswer()">Vérifier</button>
+
+    <div id="workspace" style="margin-bottom: 1rem;">
+      <!-- العناصر القابلة للسحب -->
     </div>
-    <div class="score">Score: <span id="score">0</span></div>
-    <div id="feedback"></div>
-  </div>
-  <div class="footer">
-    Fait avec ❤️ pour apprendre en s'amusant — version DragonBox Drag & Drop
-  </div>
+
+    <button class="btn" id="next-step-btn">الخطوة التالية</button>
+    <button class="btn" id="reset-btn" style="display:none;">إعادة التشغيل</button>
+    <div id="hint-box">ابدأ بالضغط على "الخطوة التالية" لحل المعادلة.</div>
+  </main>
+
+  <footer>تم تطويره بواسطة ترس الشفرة-1</footer>
+
   <script>
-    // --------- Variables globales ----------
-    const maxLevel = 8;
-    let level = 1;
-    let score = 0;
-    let currentEq = {};
-    let equationState = {};
+    // --- المتغيرات العامة ---
+    let currentLevel = 0;
+    const levels = [
+      {
+        equation: "2x + 3 = 7",
+        left:  [{ type: "box", label: "🟧", value: "x", count: 2 }, { type: "ball", label: "🔵", value: "+3", count: 1 }],
+        right: [{ type: "ball", label: "🔵", value: "7", count: 1 }],
+        steps: ["اسحب 🔵 من اليسار إلى اليمين لتصبح سالبة", "ثم اقسم على 🟧×2"]
+      },
+      {
+        equation: "3x - 4 = 2x + 1",
+        left:  [{ type: "box", label: "🟧", value: "x", count: 3 }, { type: "ball", label: "🔵", value: "-4", count: 1 }],
+        right: [{ type: "box", label: "🟧", value: "x", count: 2 }, { type: "ball", label: "🔵", value: "+1", count: 1 }],
+        steps: ["اسحب 🟧×2 من اليمين إلى اليسار", "اسحب 🔵-4 من اليسار إلى اليمين", "اقسم على 1"]
+      }
+    ];
+
+    const leftZone   = document.getElementById('left-zone');
+    const rightZone  = document.getElementById('right-zone');
+    const workspace  = document.getElementById('workspace');
+    const hintBox    = document.getElementById('hint-box');
+    const nextBtn    = document.getElementById('next-step-btn');
+    const resetBtn   = document.getElementById('reset-btn');
+    const progressFill = document.getElementById('progress-fill');
+
     let step = 0;
-    let dragType = null; // "number" ou "x"
-    let dragValue = null;
+    let dragged = null;
 
-    // --------- Génération de l’équation ---------
-    function randomInt(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
+    // --- دوال اللعبة ---
+    function createDraggable(item) {
+      const el = document.createElement('span');
+      el.className = 'tile draggable hidden-value';
+      el.draggable = true;
+      if (item.type === 'box') {
+        el.classList.add('box');
+        el.textContent = item.label;
+        el.dataset.value = item.value;
+        el.title = item.value;
+      } else {
+        el.classList.add('ball');
+        el.textContent = item.label;
+        el.dataset.value = item.value;
+        el.title = item.value;
+      }
+      el.dataset.type = item.type;
+      el.addEventListener('dragstart', e => dragged = e.target);
+      return el;
     }
-    function generateEquation(level) {
-      let a = randomInt(1, Math.min(level+1, 4)); // coefficient devant x
-      let b = randomInt(-5, 8);
-      let x = randomInt(-8, 9);
-      let c = a * x + b;
-      return {a, b, c, x};
-    }
 
-    // --------- Affichage Drag & Drop ---------
-    function showEquation(eq, state=null) {
-      let s = state || {a: eq.a, b: eq.b, c: eq.c};
-      let zone = document.getElementById('equation-zone');
-      zone.innerHTML = '';
+    function renderLevel(index) {
+      const level = levels[index];
+      workspace.innerHTML = '';
+      leftZone.innerHTML = '';
+      rightZone.innerHTML = '';
 
-      // Côté gauche
-      let left = document.createElement('div');
-      left.className = 'side';
-      left.id = 'left-side';
-      left.ondragover = dragOver;
-      left.ondrop = dropLeft;
-
-      // x boxes
-      if (Math.abs(s.a) > 0) {
-        for (let i = 0; i < Math.abs(s.a); i++) {
-          let bx = document.createElement('div');
-          bx.className = 'box x';
-          bx.draggable = false; // on ne retire jamais x par drag&drop
-          bx.textContent = (s.a > 0) ? 'x' : '-x';
-          bx.title = 'Variable';
-          left.appendChild(bx);
+      // ملء المناطق بالعناصر
+      level.left.forEach(item => {
+        for (let i = 0; i < item.count; i++) {
+          leftZone.appendChild(createDraggable(item));
         }
-      }
+      });
 
-      // nombre box
-      if (s.b !== 0) {
-        let bb = document.createElement('div');
-        bb.className = 'box';
-        bb.draggable = true;
-        bb.textContent = (s.b > 0 ? s.b : ('-' + Math.abs(s.b)));
-        bb.title = 'Glisse pour enlever ce nombre';
-        bb.ondragstart = function(ev) {
-          dragType = 'number';
-          dragValue = s.b;
-          ev.dataTransfer.setData('text/plain', 'number');
-        };
-        left.appendChild(bb);
-      }
+      level.right.forEach(item => {
+        for (let i = 0; i < item.count; i++) {
+          rightZone.appendChild(createDraggable(item));
+        }
+      });
 
-      // Signe égal
-      let eqsign = document.createElement('div');
-      eqsign.className = 'eqsign';
-      eqsign.textContent = '=';
-      zone.appendChild(left);
-      zone.appendChild(eqsign);
-
-      // Côté droit
-      let right = document.createElement('div');
-      right.className = 'side';
-      right.id = 'right-side';
-      right.ondragover = dragOver;
-      right.ondrop = dropRight;
-
-      let bc = document.createElement('div');
-      bc.className = 'box';
-      bc.draggable = true;
-      bc.textContent = s.c;
-      bc.title = 'Glisse pour enlever ce nombre';
-      bc.ondragstart = function(ev) {
-        dragType = 'numberC';
-        dragValue = s.b; // on retire le même nombre
-        ev.dataTransfer.setData('text/plain', 'numberC');
-      };
-      right.appendChild(bc);
-
-      zone.appendChild(right);
-    }
-
-    // --------- Drag & Drop ---------
-    function dragOver(ev) {
-      ev.preventDefault();
-      ev.currentTarget.classList.add('drop-hover');
-    }
-    function dropLeft(ev) {
-      ev.preventDefault();
-      ev.currentTarget.classList.remove('drop-hover');
-      // On ne retire rien du côté gauche
-    }
-    function dropRight(ev) {
-      ev.preventDefault();
-      ev.currentTarget.classList.remove('drop-hover');
-      // Si on retire le nombre du côté gauche, on doit aussi le retirer à droite
-      if (dragType === 'number' && equationState.b !== 0) {
-        // Animation: cacher la boîte b du côté gauche et c du côté droit
-        let leftBoxes = document.querySelectorAll('#left-side .box:not(.x)');
-        let rightBoxes = document.querySelectorAll('#right-side .box');
-        leftBoxes.forEach(b => b.classList.add('hide'));
-        rightBoxes.forEach(b => b.classList.add('hide'));
-        setTimeout(() => {
-          equationState.c -= equationState.b;
-          equationState.b = 0;
-          step++;
-          updateDisplay();
-        }, 450);
-      }
-      // Si on retire le nombre du côté droit, même chose
-      if (dragType === 'numberC' && equationState.b !== 0) {
-        let leftBoxes = document.querySelectorAll('#left-side .box:not(.x)');
-        let rightBoxes = document.querySelectorAll('#right-side .box');
-        leftBoxes.forEach(b => b.classList.add('hide'));
-        rightBoxes.forEach(b => b.classList.add('hide'));
-        setTimeout(() => {
-          equationState.c -= equationState.b;
-          equationState.b = 0;
-          step++;
-          updateDisplay();
-        }, 450);
-      }
-    }
-
-    // --------- Affichage aide/hint/étape ---------
-    function showHint(eq, s, step) {
-      let hint = '';
-      if (step === 0 && s.b !== 0) {
-        hint = `Glisse le nombre <b>${s.b > 0 ? s.b : ('-' + Math.abs(s.b))}</b> pour l'enlever des deux côtés.`;
-      } else if ((step === 1 || (s.b === 0 && step === 0)) && Math.abs(s.a) !== 1) {
-        hint = `Il faut maintenant diviser chaque côté par <b>${s.a}</b> pour obtenir x seul.`;
-      } else {
-        hint = `La variable x est isolée, donne la réponse !`;
-      }
-      document.getElementById('hint').innerHTML = hint;
-    }
-    function showStepText(eq, s, step) {
-      let txt = '';
-      if (step === 0 && s.b !== 0) {
-        txt = `Étape 1 : Retire le terme constant des deux côtés.`;
-      } else if ((step === 1 || (s.b === 0 && step === 0)) && Math.abs(s.a) !== 1) {
-        txt = `Étape 2 : Divise chaque côté par ${s.a}.`;
-      } else {
-        txt = `Dernière étape : x est isolé !`;
-      }
-      document.getElementById('step').textContent = txt;
-    }
-
-    // --------- Diviser par a (bouton) ---------
-    function showDivideButton(eq, s, step) {
-      // Si on doit diviser, bouton à afficher
-      let zone = document.getElementById('hint');
-      if ((step === 1 || (s.b === 0 && step === 0)) && Math.abs(s.a) !== 1) {
-        let btn = document.createElement('button');
-        btn.textContent = `Diviser chaque côté par ${s.a}`;
-        btn.style.background = 'linear-gradient(135deg, #fa7c92 70%, #ffd6e0 100%)';
-        btn.style.color = '#fff'; btn.style.fontWeight = 'bold';
-        btn.style.borderRadius = '8px'; btn.style.marginLeft = '12px';
-        btn.style.padding = '7px 18px'; btn.style.cursor = 'pointer';
-        btn.onclick = () => {
-          let leftBoxes = document.querySelectorAll('#left-side .box.x');
-          let rightBoxes = document.querySelectorAll('#right-side .box');
-          leftBoxes.forEach(b => b.classList.add('hide'));
-          rightBoxes.forEach(b => b.classList.add('hide'));
-          setTimeout(() => {
-            equationState.c = equationState.c / equationState.a;
-            equationState.a = 1;
-            step++;
-            updateDisplay();
-          }, 450);
-        };
-        zone.appendChild(btn);
-      }
-    }
-
-    // --------- Mise à jour écran ---------
-    function updateDisplay() {
-      showEquation(currentEq, equationState);
-      showHint(currentEq, equationState, step);
-      showStepText(currentEq, equationState, step);
-      showDivideButton(currentEq, equationState, step);
-      document.getElementById('feedback').innerHTML = '';
-      document.getElementById('response').value = '';
-      document.getElementById('progress').style.width = `${(level-1)/maxLevel*100}%`;
-      document.getElementById('level').textContent = level;
-      document.getElementById('max-level').textContent = maxLevel;
-      document.getElementById('score').textContent = score;
-    }
-
-    // --------- Niveau suivant ---------
-    function nextLevel() {
-      if (level > maxLevel) {
-        document.querySelector('.container').innerHTML = 
-          `<h1>Bravo 🏆 !</h1>
-          <div class="success">Tu as terminé tous les niveaux.<br><br>Score final: ${score} / ${maxLevel}</div>
-          <button onclick="location.reload()">Rejouer</button>`;
-        return;
-      }
+      hintBox.textContent = level.steps[0];
+      progressFill.style.width = `${((index + 1) / levels.length) * 100}%`;
       step = 0;
-      currentEq = generateEquation(level);
-      equationState = {a: currentEq.a, b: currentEq.b, c: currentEq.c};
-      updateDisplay();
+      nextBtn.style.display = 'none';
+      resetBtn.style.display = 'none';
     }
 
-    // --------- Vérification réponse ---------
-    function checkAnswer() {
-      let val = document.getElementById('response').value;
-      let feedback = document.getElementById('feedback');
-      if (val === '') {
-        feedback.innerHTML = `<span class="error">Entre une réponse !</span>`;
-        return;
-      }
-      val = Number(val);
-      let s = equationState;
-      let solution = Math.round(s.c); // arrondi pour éviter erreurs d'affichage
-      if (s.a === 1 && s.b === 0 && val === solution) {
-        score++;
-        document.getElementById('score').textContent = score;
-        feedback.innerHTML = `<span class="success">Bravo, c'est la bonne réponse ! 🐲</span>`;
-        level++;
-        document.getElementById('progress').style.width = `${(level-1)/maxLevel*100}%`;
-        setTimeout(nextLevel, 1200);
-      } else {
-        feedback.innerHTML = `<span class="error">Ce n'est pas la bonne réponse ou l'équation n'est pas encore isolée.<br>Poursuis les étapes !</span>`;
-      }
-    }
-
-    document.getElementById('response').addEventListener('keypress', function(e){
-      if(e.key === 'Enter') checkAnswer();
+    // إعداد مناطق الإفلات
+    [leftZone, rightZone].forEach(zone => {
+      zone.addEventListener('dragover', e => e.preventDefault());
+      zone.addEventListener('dragenter', () => zone.classList.add('highlight'));
+      zone.addEventListener('dragleave', () => zone.classList.remove('highlight'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        if (dragged) {
+          zone.classList.remove('highlight');
+          zone.appendChild(dragged);
+          dragged.classList.add('correct-drop');
+          setTimeout(() => dragged.classList.remove('correct-drop'), 400);
+          
+          // تشغيل صوت خافت
+          playTone(600, 0.1);
+          
+          checkStep();
+        }
+      });
     });
 
-    // --------- Initialisation ---------
-    nextLevel();
+    function checkStep() {
+      const level = levels[currentLevel];
+      step++;
+      if (step < level.steps.length) {
+        hintBox.textContent = level.steps[step];
+      } else {
+        hintBox.textContent = "✅ تم حل المعادلة بنجاح!";
+        nextBtn.style.display = 'inline-block';
+      }
+    }
+
+    nextBtn.addEventListener('click', () => {
+      if (currentLevel < levels.length - 1) {
+        currentLevel++;
+        renderLevel(currentLevel);
+      } else {
+        hintBox.textContent = "🏆 أحسنت! أنهيت جميع المستويات!";
+        nextBtn.style.display = 'none';
+        resetBtn.style.display = 'inline-block';
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      renderLevel(0);
+      nextBtn.style.display = 'none';
+      resetBtn.style.display = 'none';
+    });
+
+    // --- تحسينات UX: الصوت والمؤثرات ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq = 600, duration = 0.1) {
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.log("الصوت غير مدعوم في هذا المتصفح");
+      }
+    }
+
+    function revealValues() {
+      document.querySelectorAll('.hidden-value').forEach(el => {
+        el.addEventListener('click', () => {
+          el.classList.toggle('revealed');
+          playTone(800, 0.05);
+        });
+      });
+    }
+
+    // --- تهيئة اللعبة ---
+    renderLevel(0);
+    revealValues();
   </script>
 </body>
 </html>
