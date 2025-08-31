@@ -1,241 +1,455 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <title>لعبة المعادلات - خطوة بخطوة</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    :root {
-      --primary: #4f46e5;
-      --success: #22c55e;
-      --error: #ef4444;
-      --bg: #f9fafb;
-      --card: #ffffff;
-      --text: #111827;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
-    body { background: var(--bg); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; align-items: center; padding: 2rem; }
-    header { width: 100%; max-width: 600px; text-align: center; margin-bottom: 1.5rem; }
-    #progress-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 1rem; }
-    #progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
-    #game-area { background: var(--card); border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.05); padding: 2rem; width: 100%; max-width: 600px; text-align: center; }
-    #equation-svg { width: 100%; height: 120px; margin-bottom: 1.5rem; }
-    .btn { background: var(--primary); color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; cursor: pointer; margin: 0.5rem; transition: background 0.2s; }
-    .btn:hover { background: #4338ca; }
-    #hint-box { margin-top: 1rem; font-size: 0.9rem; color: #6b7280; }
-    footer { margin-top: 2rem; font-size: 0.8rem; color: #9ca3af; }
-    
-    /* إضافات CSS للوحدات */
-    .tile-group { display: inline-flex; align-items: center; gap: 0.5rem; }
-    .tile { display: inline-block; width: 50px; height: 50px; border-radius: 8px; font-size: 24px; line-height: 50px; text-align: center; }
-    .box  { background: #f97316; color: #fff; font-weight: bold; }      /* x */
-    .ball { background: #3b82f6; color: #fff; border-radius: 50%; }     /* عدد */
-    .op   { font-size: 28px; margin: 0 0.25rem; }
-    .equals { font-size: 32px; margin: 0 1rem; }
-    
-    /* إضافات السحب والإفلات */
-    .draggable { cursor: grab; transition: transform 0.2s; }
-    .draggable:active { cursor: grabbing; transform: scale(1.05); }
-    .drop-zone { min-height: 60px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0.5rem 0; }
-    .drop-zone.highlight { border-color: var(--primary); background: #eef2ff; }
-    
-    /* تأثيرات UX */
-    @keyframes pulse {
-      0%   { transform: scale(1); }
-      50%  { transform: scale(1.08); background: var(--success); }
-      100% { transform: scale(1); }
-    }
-    .correct-drop { animation: pulse 0.4s ease; }
-    .hidden-value { filter: blur(3px) grayscale(1); transition: filter 0.4s; }
-    .revealed     { filter: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ترس الشفرة-1 | تعلم حل المعادلات الخطية</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            animation: headerAnimation 1.5s ease-in-out;
+        }
+
+        @keyframes headerAnimation {
+            0% { transform: translateY(-20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        main {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        main:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .equation-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+            transition: all 0.3s ease;
+        }
+
+        .equation-container:hover {
+            background-color: #d1f5d1;
+        }
+
+        .answer-container {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #user-answer {
+            padding: 10px;
+            width: 120px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #user-answer:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        #submit-btn, #reset-btn, #new-question-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #submit-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #submit-btn:hover {
+            background-color: #388E3C;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        #reset-btn, #new-question-btn {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        #reset-btn:hover, #new-question-btn:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .feedback-container {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        #feedback-message {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .correct {
+            background-color: #e8f5e9;
+            color: #2E7D32;
+            display: block;
+            animation: correctAnimation 0.5s ease;
+        }
+
+        .incorrect {
+            background-color: #ffebee;
+            color: #C62828;
+            display: block;
+            animation: incorrectAnimation 0.5s ease;
+        }
+
+        @keyframes correctAnimation {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes incorrectAnimation {
+            0% { transform: scale(1.05); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #777;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        #score-display, #attempts-display, #level-display {
+            padding: 8px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            background-color: #f5f5f5;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        #score-display {
+            background-color: #e8f5e9;
+            color: #2E7D32;
+        }
+
+        #attempts-display {
+            background-color: #ffebee;
+            color: #C62828;
+        }
+
+        #level-display {
+            background-color: #e3f2fd;
+            color: #1976D2;
+        }
+
+        .rewards-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .rewards-container:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .reward-badge {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: inline-block;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            transform: perspective(1px) translateZ(0);
+        }
+
+        .reward-badge:hover {
+            transform: scale(1.05) translateZ(0);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .reward-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .reward-badge:hover::before {
+            transform: translateX(100%);
+        }
+
+        .reward-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .reward-description {
+            font-size: 12px;
+            opacity: 0.9;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+        }
+
+        .reward-badge.level-1 {
+            background-color: #4CAF50;
+        }
+
+        .reward-badge.level-2 {
+            background-color: #2196F3;
+        }
+
+        .reward-badge.level-3 {
+            background-color: #9C27B0;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>لعبة المعادلات</h1>
-    <div id="progress-bar"><div id="progress-fill"></div></div>
-  </header>
+    <header>
+        <h1>ترس الشفرة-1</h1>
+        <p>تعلم حل المعادلات الخطية بطريقة لعبية</p>
+    </header>
 
-  <main id="game-area">
-    <svg id="equation-svg" viewBox="0 0 600 120">
-      <!-- النص الأصلي مخفي -->
-      <text id="equation-text" x="300" y="70" font-size="28" text-anchor="middle" fill="#111" style="display:none;">2x + 3 = 7</text>
-    </svg>
-    
-    <div id="equation-visual" style="display: flex; justify-content: center; gap: 0.5rem; align-items: center; margin-bottom: 1rem;">
-      <!-- المناطق الجانبية -->
-      <div class="drop-zone" id="left-zone" data-side="left"></div>
-      <span class="equals">=</span>
-      <div class="drop-zone" id="right-zone" data-side="right"></div>
-    </div>
+    <main>
+        <div class="controls">
+            <div id="score-display">النقاط: 0</div>
+            <div id="attempts-display">المحاولات المتبقية: 3</div>
+            <div id="level-display">المستوى: مبتدئ</div>
+            <button id="new-question-btn">بدء تمرين جديد</button>
+            <button id="reset-btn">إعادة تعيين</button>
+        </div>
 
-    <div id="workspace" style="margin-bottom: 1rem;">
-      <!-- العناصر القابلة للسحب -->
-    </div>
+        <div id="equation-container" class="equation-container">
+            <h2>المعادلة:</h2>
+            <p id="equation-display">3x + 5 = 14</p>
+        </div>
 
-    <button class="btn" id="next-step-btn">الخطوة التالية</button>
-    <button class="btn" id="reset-btn" style="display:none;">إعادة التشغيل</button>
-    <div id="hint-box">ابدأ بالضغط على "الخطوة التالية" لحل المعادلة.</div>
-  </main>
+        <div id="answer-container" class="answer-container">
+            <input type="number" id="user-answer" placeholder="أدخل إجابتك">
+            <button id="submit-btn">تحقق</button>
+        </div>
 
-  <footer>تم تطويره بواسطة ترس الشفرة-1</footer>
+        <div id="feedback-container" class="feedback-container">
+            <p id="feedback-message"></p>
+        </div>
 
-  <script>
-    // --- المتغيرات العامة ---
-    let currentLevel = 0;
-    const levels = [
-      {
-        equation: "2x + 3 = 7",
-        left:  [{ type: "box", label: "🟧", value: "x", count: 2 }, { type: "ball", label: "🔵", value: "+3", count: 1 }],
-        right: [{ type: "ball", label: "🔵", value: "7", count: 1 }],
-        steps: ["اسحب 🔵 من اليسار إلى اليمين لتصبح سالبة", "ثم اقسم على 🟧×2"]
-      },
-      {
-        equation: "3x - 4 = 2x + 1",
-        left:  [{ type: "box", label: "🟧", value: "x", count: 3 }, { type: "ball", label: "🔵", value: "-4", count: 1 }],
-        right: [{ type: "box", label: "🟧", value: "x", count: 2 }, { type: "ball", label: "🔵", value: "+1", count: 1 }],
-        steps: ["اسحب 🟧×2 من اليمين إلى اليسار", "اسحب 🔵-4 من اليسار إلى اليمين", "اقسم على 1"]
-      }
-    ];
+        <div id="rewards-container" class="rewards-container"></div>
+    </main>
 
-    const leftZone   = document.getElementById('left-zone');
-    const rightZone  = document.getElementById('right-zone');
-    const workspace  = document.getElementById('workspace');
-    const hintBox    = document.getElementById('hint-box');
-    const nextBtn    = document.getElementById('next-step-btn');
-    const resetBtn   = document.getElementById('reset-btn');
-    const progressFill = document.getElementById('progress-fill');
+    <footer>
+        <p>© 2024 ترس الشفرة-1</p>
+    </footer>
 
-    let step = 0;
-    let dragged = null;
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // المتغيرات الأساسية
+            let currentEquation = '';
+            let correctAnswer = 0;
+            let score = 0;
+            let attempts = 0;
+            let maxAttempts = 3;
+            let currentLevel = 1;
+            const levels = [
+                { name: "مبتدئ", maxNumber: 10, operations: ['+'], reward: "شهادة المبتدئ" },
+                { name: "متوسط", maxNumber: 20, operations: ['+', '-'], reward: "شهادة المتوسط" },
+                { name: "متقدم", maxNumber: 50, operations: ['+', '-', '*'], reward: "شهادة المتقدم" }
+            ];
+            const rewards = [];
 
-    // --- دوال اللعبة ---
-    function createDraggable(item) {
-      const el = document.createElement('span');
-      el.className = 'tile draggable hidden-value';
-      el.draggable = true;
-      if (item.type === 'box') {
-        el.classList.add('box');
-        el.textContent = item.label;
-        el.dataset.value = item.value;
-        el.title = item.value;
-      } else {
-        el.classList.add('ball');
-        el.textContent = item.label;
-        el.dataset.value = item.value;
-        el.title = item.value;
-      }
-      el.dataset.type = item.type;
-      el.addEventListener('dragstart', e => dragged = e.target);
-      return el;
-    }
+            // العناصر DOM
+            const equationDisplay = document.getElementById('equation-display');
+            const userAnswer = document.getElementById('user-answer');
+            const submitBtn = document.getElementById('submit-btn');
+            const newQuestionBtn = document.getElementById('new-question-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const feedbackContainer = document.getElementById('feedback-container');
+            const feedbackMessage = document.getElementById('feedback-message');
+            const scoreDisplay = document.getElementById('score-display');
+            const attemptsDisplay = document.getElementById('attempts-display');
+            const levelDisplay = document.getElementById('level-display');
+            const rewardsContainer = document.getElementById('rewards-container');
 
-    function renderLevel(index) {
-      const level = levels[index];
-      workspace.innerHTML = '';
-      leftZone.innerHTML = '';
-      rightZone.innerHTML = '';
+            // توليد معادلة عشوائية
+            function generateEquation() {
+                const level = levels[currentLevel-1];
+                const operation = level.operations[Math.floor(Math.random() * level.operations.length)];
+                let a, b, c;
 
-      // ملء المناطق بالعناصر
-      level.left.forEach(item => {
-        for (let i = 0; i < item.count; i++) {
-          leftZone.appendChild(createDraggable(item));
-        }
-      });
+                switch(operation) {
+                    case '+':
+                        a = Math.floor(Math.random() * level.maxNumber) + 1;
+                        b = Math.floor(Math.random() * level.maxNumber) + 1;
+                        c = a + b;
+                        currentEquation = `${a}x ${operation} ${b} = ${c}`;
+                        correctAnswer = a;
+                        break;
+                    case '-':
+                        a = Math.floor(Math.random() * level.maxNumber) + 1;
+                        b = Math.floor(Math.random() * a) + 1;
+                        c = a - b;
+                        currentEquation = `${a}x ${operation} ${b} = ${c}`;
+                        correctAnswer = a;
+                        break;
+                    case '*':
+                        a = Math.floor(Math.random() * Math.floor(level.maxNumber/2)) + 1;
+                        b = Math.floor(Math.random() * 5) + 1;
+                        c = a * b;
+                        currentEquation = `${a}x ${operation} ${b} = ${c}`;
+                        correctAnswer = a;
+                        break;
+                }
 
-      level.right.forEach(item => {
-        for (let i = 0; i < item.count; i++) {
-          rightZone.appendChild(createDraggable(item));
-        }
-      });
+                // عرض المعادلة
+                equationDisplay.textContent = currentEquation;
+                userAnswer.value = '';
+                feedbackContainer.style.display = 'none';
+                attempts = 0;
+                attemptsDisplay.textContent = `المحاولات المتبقية: ${maxAttempts}`;
+            }
 
-      hintBox.textContent = level.steps[0];
-      progressFill.style.width = `${((index + 1) / levels.length) * 100}%`;
-      step = 0;
-      nextBtn.style.display = 'none';
-      resetBtn.style.display = 'none';
-    }
+            // التحقق من الإجابة
+            function checkAnswer() {
+                const userInput = parseFloat(userAnswer.value);
 
-    // إعداد مناطق الإفلات
-    [leftZone, rightZone].forEach(zone => {
-      zone.addEventListener('dragover', e => e.preventDefault());
-      zone.addEventListener('dragenter', () => zone.classList.add('highlight'));
-      zone.addEventListener('dragleave', () => zone.classList.remove('highlight'));
-      zone.addEventListener('drop', e => {
-        e.preventDefault();
-        if (dragged) {
-          zone.classList.remove('highlight');
-          zone.appendChild(dragged);
-          dragged.classList.add('correct-drop');
-          setTimeout(() => dragged.classList.remove('correct-drop'), 400);
-          
-          // تشغيل صوت خافت
-          playTone(600, 0.1);
-          
-          checkStep();
-        }
-      });
-    });
+                if (isNaN(userInput)) {
+                    showFeedback('يرجى إدخال عدد صحيح', 'incorrect');
+                    return;
+                }
 
-    function checkStep() {
-      const level = levels[currentLevel];
-      step++;
-      if (step < level.steps.length) {
-        hintBox.textContent = level.steps[step];
-      } else {
-        hintBox.textContent = "✅ تم حل المعادلة بنجاح!";
-        nextBtn.style.display = 'inline-block';
-      }
-    }
+                attempts++;
 
-    nextBtn.addEventListener('click', () => {
-      if (currentLevel < levels.length - 1) {
-        currentLevel++;
-        renderLevel(currentLevel);
-      } else {
-        hintBox.textContent = "🏆 أحسنت! أنهيت جميع المستويات!";
-        nextBtn.style.display = 'none';
-        resetBtn.style.display = 'inline-block';
-      }
-    });
+                if (userInput === correctAnswer) {
+                    score += 10;
+                    scoreDisplay.textContent = `النقاط: ${score}`;
 
-    resetBtn.addEventListener('click', () => {
-      renderLevel(0);
-      nextBtn.style.display = 'none';
-      resetBtn.style.display = 'none';
-    });
+                    // التحقق من مستوى جديد
+                    if (score >= currentLevel * 50 && currentLevel < levels.length) {
+                        currentLevel++;
+                        levelDisplay.textContent = `المستوى: ${levels[currentLevel-1].name}`;
 
-    // --- تحسينات UX: الصوت والمؤثرات ---
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playTone(freq = 600, duration = 0.1) {
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + duration);
-      } catch (e) {
-        console.log("الصوت غير مدعوم في هذا المتصفح");
-      }
-    }
+                        // إضافة المكافأة الجديدة
+                        if (!rewards.includes(levels[currentLevel-1].reward)) {
+                            rewards.push(levels[currentLevel-1].reward);
+                            addRewardBadge(levels[currentLevel-1].reward);
+                        }
 
-    function revealValues() {
-      document.querySelectorAll('.hidden-value').forEach(el => {
-        el.addEventListener('click', () => {
-          el.classList.toggle('revealed');
-          playTone(800, 0.05);
+                        showFeedback(`تهانينا! حصلت على ${levels[currentLevel-1].reward} 🎉`, 'correct');
+                    } else {
+                        showFeedback('صحيح! 🎉', 'correct');
+                    }
+
+                    setTimeout(generateEquation, 2000);
+                } else {
+                    if (attempts >= maxAttempts) {
+                        showFeedback(`الجواب الصحيح هو ${correctAnswer}. حاول مرة أخرى!`, 'incorrect');
+                        setTimeout(generateEquation, 2000);
+                    } else {
+                        showFeedback(`خطأ! حاول مرة أخرى. (${maxAttempts - attempts} محاولات متبقية)`, 'incorrect');
+                    }
+                }
+            }
+
+            // إضافة شارة مكافأة
+            function addRewardBadge(reward) {
+                const badge = document.createElement('div');
+                badge.className = `reward-badge level-${currentLevel}`;
+                badge.innerHTML = `
+                    <div class="reward-title">${reward}</div>
+                    <div class="reward-description">مستوى ${currentLevel}</div>
+                `;
+                rewardsContainer.appendChild(badge);
+
+                // إضافة تأثيرات رسومية للمكافآت
+                setTimeout(() => {
+                    const badges = document.querySelectorAll(".reward-badge");
+                    badges.forEach(badge => {
+                        badge.style.animation = "badgeAnimation 0.5s ease";
+                    });
+                }, 100);
+            }
+
+            // عرض رسالة التغذية الراجعة
+            function showFeedback(message, type) {
+                feedbackMessage.textContent = message;
+                feedbackContainer.className = `feedback-container ${type}`;
+                feedbackContainer.style.display = 'block';
+            }
+
+            // إعادة تعيين التمرين
+            function resetQuestion() {
+                userAnswer.value = '';
+                feedbackContainer.style.display = 'none';
+            }
+
+            // Events
+            submitBtn.addEventListener('click', checkAnswer);
+            newQuestionBtn.addEventListener('click', generateEquation);
+            resetBtn.addEventListener('click', resetQuestion);
+
+            // توليد التمرين الأول عند تحميل الصفحة
+            generateEquation();
         });
-      });
-    }
-
-    // --- تهيئة اللعبة ---
-    renderLevel(0);
-    revealValues();
-  </script>
+    </script>
 </body>
 </html>
