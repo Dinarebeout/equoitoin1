@@ -2,525 +2,164 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة تعليم حل المعادلات</title>
+    <title>معادلاتي - مغامرة حل المعادلات</title>
     <style>
-        /* أنماط التصميم العامة */
-        body {
-            font-family: 'Cairo', Arial, sans-serif;
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        /* تصميم CSS الكامل */
+        :root {
+            --primary-blue: #2575fc;
+            --primary-purple: #6a11cb;
+            --background-color: #f0f4f8;
+            --text-color: #333;
+        }
+
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
             min-height: 100vh;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .container {
-            background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            width: 90%;
-            max-width: 800px;
-            padding: 20px;
             text-align: center;
-            margin: 20px 0;
         }
-        
-        h1 {
-            color: #2575fc;
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        
-        h2 {
-            color: #6a11cb;
-            font-size: 1.8rem;
-            margin: 20px 0;
-        }
-        
-        p {
-            font-size: 1.2rem;
-            line-height: 1.6;
-            margin: 15px 0;
-        }
-        
-        /* شاشة البداية */
-        #start-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .game-character {
-            width: 150px;
-            height: 150px;
-            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
-            border-radius: 50%;
-            margin: 20px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 60px;
-            color: white;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* أزرار اللعبة */
-        .btn {
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            border-radius: 50px;
-            cursor: pointer;
-            margin: 10px;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-        }
-        
-        /* منطقة المعادلة */
-        .equation-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 30px 0;
-            font-size: 2rem;
-            flex-wrap: wrap;
-        }
-        
-        .equation-part {
-            margin: 0 10px;
-            min-width: 50px;
-            text-align: center;
-            padding: 10px 15px;
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* أدوات اللعبة */
-        .tools-container {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin: 20px 0;
-        }
-        
-        .tool {
-            width: 60px;
-            height: 60px;
-            margin: 10px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            cursor: grab;
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
-            transition: all 0.2s ease;
-            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
-            color: white;
-        }
-        
-        .tool:hover {
-            transform: scale(1.1);
-        }
-        
-        /* منطقة الإسقاط */
-        .drop-zone {
-            width: 80px;
-            height: 80px;
-            border: 2px dashed #6a11cb;
-            border-radius: 10px;
-            margin: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(37, 117, 252, 0.1);
-        }
-        
-        /* التقدم والمستويات */
-        .progress-container {
+
+        #game-container {
             width: 100%;
-            background-color: #e9ecef;
-            border-radius: 50px;
-            margin: 20px 0;
-            overflow: hidden;
+            max-width: 800px;
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+            transition: all 0.3s ease;
         }
-        
-        .progress-bar {
-            height: 20px;
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-            border-radius: 50px;
-            width: 0%;
-            transition: width 0.5s ease;
-        }
-        
-        .level-indicator {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #6a11cb;
-            margin: 10px 0;
-        }
-        
-        /* التغذية الراجعة */
-        .feedback {
-            font-size: 1.2rem;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            display: none;
-        }
-        
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        /* الشاشات المختلفة */
+
+        /* تصميمات الشاشات والأزرار والعناصر التفاعلية */
         .screen {
             display: none;
         }
-        
-        .active {
+
+        .screen.active {
             display: block;
         }
-        
-        /* التعليمات */
-        .instructions {
-            background-color: #e9ecef;
-            padding: 20px;
+
+        .btn {
+            background: linear-gradient(to right, var(--primary-blue), var(--primary-purple));
+            color: white;
+            border: none;
+            padding: 10px 20px;
             border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* تصميمات المعادلات والأدوات */
+        .equation-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f9f9f9;
+            border-radius: 15px;
+            padding: 20px;
             margin: 20px 0;
-            text-align: right;
         }
-        
-        /* التأثيرات البصرية */
-        @keyframes celebrate {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        
-        .celebrate {
-            animation: celebrate 0.5s ease-in-out 3;
-        }
-        
-        /* التكيف مع الشاشات الصغيرة */
-        @media (max-width: 768px) {
-            .container {
-                width: 95%;
-                padding: 15px;
-            }
-            
-            h1 {
-                font-size: 2rem;
-            }
-            
-            h2 {
-                font-size: 1.5rem;
-            }
-            
-            .equation-container {
-                font-size: 1.5rem;
-            }
-            
-            .tool {
-                width: 50px;
-                height: 50px;
-                font-size: 1.2rem;
-            }
+
+        .draggable-tool {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: move;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- شاشة البداية -->
-        <div id="start-screen" class="screen active">
-            <h1>لعبة تعليم حل المعادلات</h1>
-            <div class="game-character">🧮</div>
-            <p>انضم إلى مغامرة تعلم حل المعادلات من الدرجة الأولى بطريقة ممتة وتفاعلية!</p>
-            <p>سوف تتعلم خطوة بخطوة حتى تتقن حل المعادلات بكل سهولة.</p>
-            <button class="btn" onclick="showScreen('level-select-screen')">ابدأ اللعبة</button>
-            <button class="btn" onclick="showScreen('instructions-screen')">كيفية اللعب</button>
+    <div id="game-container">
+        <!-- شاشة الترحيب -->
+        <div id="welcome-screen" class="screen active">
+            <h1>مرحباً بك في معادلاتي!</h1>
+            <p>مغامرة رائعة لتعلم حل المعادلات</p>
+            <button class="btn" onclick="startGame()">ابدأ المغامرة</button>
         </div>
-        
+
         <!-- شاشة اختيار المستوى -->
         <div id="level-select-screen" class="screen">
-            <h2>اختر مستوى الصعوبة</h2>
-            <button class="btn" onclick="startGame(1)">المستوى الأول: المعادلات البسيطة</button>
-            <button class="btn" onclick="startGame(2)">المستوى الثاني: جمع وطرح المتغيرات</button>
-            <button class="btn" onclick="startGame(3)">المستوى الثالث: ضرب وقسمة المتغيرات</button>
-            <button class="btn" onclick="startGame(4)">المستوى المتقدم: معادلات متعددة الخطوات</button>
-            <button class="btn" onclick="showScreen('start-screen')">رجوع</button>
-        </div>
-        
-        <!-- شاشة التعليمات -->
-        <div id="instructions-screen" class="screen">
-            <h2>كيفية اللعب</h2>
-            <div class="instructions">
-                <p>1. هدفك هو عزل المتغير (س) على جانب واحد من المعادلة</p>
-                <p>2. استخدم الأدوات المتاحة لتطبيق العمليات على كلا الجانبين</p>
-                <p>3. يجب الحفاظ على توازن المعادلة بتطبيق نفس العملية على الجانبين</p>
-                <p>4. تقدم عبر المستويات لتعلم تقنيات أكثر تقدماً</p>
-                <p>5. استخدم الزر "تلميح" إذا احتجت إلى مساعدة</p>
+            <h2>اختر مستواك</h2>
+            <div class="level-buttons">
+                <button class="btn" onclick="startLevel(1)">المستوى 1: معادلات بسيطة</button>
+                <button class="btn" onclick="startLevel(2)">المستوى 2: جمع وطرح المتغيرات</button>
+                <button class="btn" onclick="startLevel(3)">المستوى 3: ضرب وقسمة المتغيرات</button>
+                <button class="btn" onclick="startLevel(4)">المستوى 4: معادلات متعددة الخطوات</button>
             </div>
-            <button class="btn" onclick="showScreen('start-screen')">رجوع</button>
         </div>
-        
+
         <!-- شاشة اللعبة الرئيسية -->
         <div id="game-screen" class="screen">
-            <h2 id="level-title">المستوى 1: المعادلات البسيطة</h2>
-            <div class="level-indicator">المستوى: <span id="current-level">1</span></div>
-            <div class="progress-container">
-                <div class="progress-bar" id="progress-bar"></div>
+            <div class="equation-area" id="equation-container">
+                <!-- سيتم إنشاء المعادلات هنا ديناميكياً -->
             </div>
-            
-            <div class="equation-container">
-                <div class="equation-part" id="left-side">س + 3</div>
-                <div class="equation-part">=</div>
-                <div class="equation-part" id="right-side">7</div>
+            <div class="tools-area" id="tools-container">
+                <!-- أدوات التفاعل مع المعادلات -->
             </div>
-            
-            <div class="tools-container">
-                <div class="tool" onclick="useTool('add')">+</div>
-                <div class="tool" onclick="useTool('subtract')">-</div>
-                <div class="tool" onclick="useTool('multiply')">×</div>
-                <div class="tool" onclick="useTool('divide')">÷</div>
-                <div class="tool" onclick="useTool('number')">2</div>
-                <div class="tool" onclick="useTool('hint')">💡</div>
+            <div class="progress-bar">
+                <!-- شريط التقدم -->
             </div>
-            
-            <div id="feedback" class="feedback"></div>
-            
-            <button class="btn" onclick="checkSolution()">تحقق من الحل</button>
-            <button class="btn" onclick="resetEquation()">إعادة تعيين</button>
-            <button class="btn" onclick="showScreen('level-select-screen')">اختيار مستوى آخر</button>
-        </div>
-        
-        <!-- شاشة النجاح -->
-        <div id="success-screen" class="screen">
-            <h2>أحسنت! لقد أكملت المستوى بنجاح</h2>
-            <div class="game-character celebrate">🎉</div>
-            <p>لقد تمكنت من حل المعادلة بشكل صحيح</p>
-            <p id="success-message">المستوى التالي سيكون أكثر تحدياً!</p>
-            <button class="btn" onclick="nextLevel()">المستوى التالي</button>
-            <button class="btn" onclick="showScreen('level-select-screen')">اختيار مستوى آخر</button>
         </div>
     </div>
 
     <script>
-        // حالة اللعبة
-        const gameState = {
-            currentLevel: 1,
-            progress: 0,
-            equation: {
-                left: "س + 3",
-                right: "7",
-                solution: 4
-            },
-            steps: 0,
-            maxSteps: 0
-        };
-        
-        // معادلات لكل مستوى
+        // JavaScript التفاعلي
         const levels = [
-            // المستوى 1: معادلات بسيطة
-            [
-                { left: "س + 2", right: "5", solution: 3 },
-                { left: "س - 3", right: "4", solution: 7 },
-                { left: "س + 5", right: "9", solution: 4 }
-            ],
-            // المستوى 2: جمع وطرح المتغيرات
-            [
-                { left: "2س + 3", right: "11", solution: 4 },
-                { left: "3س - 4", right: "8", solution: 4 },
-                { left: "5س + 1", right: "16", solution: 3 }
-            ],
-            // المستوى 3: ضرب وقسمة المتغيرات
-            [
-                { left: "س / 2", right: "4", solution: 8 },
-                { left: "3س", right: "15", solution: 5 },
-                { left: "س / 3", right: "3", solution: 9 }
-            ],
-            // المستوى 4: معادلات متعددة الخطوات
-            [
-                { left: "2س + 3", right: "س + 7", solution: 4 },
-                { left: "3س - 2", right: "2س + 5", solution: 7 },
-                { left: "4س + 1", right: "2س + 9", solution: 4 }
-            ]
+            {
+                name: "معادلات بسيطة",
+                equations: [
+                    { left: "x + 2", right: "5", solution: 3 },
+                    { left: "x - 3", right: "4", solution: 7 }
+                ]
+            },
+            // سيتم إضافة باقي المستويات هنا
         ];
-        
-        // عرض شاشة محددة وإخفاء الأخرى
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
-            document.getElementById(screenId).classList.add('active');
+
+        let currentLevel = 0;
+        let currentEquation = 0;
+
+        function startGame() {
+            document.getElementById('welcome-screen').classList.remove('active');
+            document.getElementById('level-select-screen').classList.add('active');
         }
-        
-        // بدء اللعبة بمستوى محدد
-        function startGame(level) {
-            gameState.currentLevel = level;
-            gameState.progress = 0;
-            updateProgressBar();
-            loadRandomEquation(level);
-            document.getElementById('current-level').textContent = level;
-            document.getElementById('level-title').textContent = `المستوى ${level}: ${getLevelTitle(level)}`;
-            showScreen('game-screen');
+
+        function startLevel(level) {
+            currentLevel = level - 1;
+            document.getElementById('level-select-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            loadEquation();
         }
-        
-        // الحصول على عنوان المستوى
-        function getLevelTitle(level) {
-            const titles = [
-                "",
-                "المعادلات البسيطة",
-                "جمع وطرح المتغيرات",
-                "ضرب وقسمة المتغيرات",
-                "معادلات متعددة الخطوات"
-            ];
-            return titles[level];
+
+        function loadEquation() {
+            const equationContainer = document.getElementById('equation-container');
+            const currentLevelData = levels[currentLevel];
+            const equation = currentLevelData.equations[currentEquation];
+
+            // سيتم إنشاء المعادلة بشكل تفاعلي
+            equationContainer.innerHTML = `
+                <div class="equation">
+                    <span>${equation.left}</span> = 
+                    <span>${equation.right}</span>
+                </div>
+            `;
         }
-        
-        // تحميل معادلة عشوائية للمستوى
-        function loadRandomEquation(level) {
-            const levelEquations = levels[level - 1];
-            const randomIndex = Math.floor(Math.random() * levelEquations.length);
-            gameState.equation = {...levelEquations[randomIndex]};
-            gameState.steps = 0;
-            gameState.maxSteps = calculateMaxSteps(gameState.equation);
-            
-            document.getElementById('left-side').textContent = gameState.equation.left;
-            document.getElementById('right-side').textContent = gameState.equation.right;
-            
-            // إخفاء التغذية الراجعة
-            document.getElementById('feedback').style.display = 'none';
-        }
-        
-        // حساب الحد الأقصى للخطوات المطلوبة
-        function calculateMaxSteps(equation) {
-            // هذه دمية - في تطبيق حقيقي، ستحسب بناءً على تعقيد المعادلة
-            return 3;
-        }
-        
-        // استخدام أداة من أدوات اللعبة
-        function useTool(tool) {
-            if (tool === 'hint') {
-                showHint();
-                return;
-            }
-            
-            // في تطبيق كامل، سيتم تطبيق الأداة على المعادلة
-            gameState.steps++;
-            showFeedback(`تم تطبيق ${getToolName(tool)} على المعادلة`, 'success');
-        }
-        
-        // الحصول على اسم الأداة
-        function getToolName(tool) {
-            const names = {
-                'add': 'الجمع',
-                'subtract': 'الطرح',
-                'multiply': 'الضرب',
-                'divide': 'القسمة',
-                'number': 'الرقم'
-            };
-            return names[tool] || tool;
-        }
-        
-        // عرض تلميح
-        function showHint() {
-            const hints = [
-                "تذكر: يجب أن تظل المعادلة متوازنة بتطبيق نفس العملية على الجانبين",
-                "حاول عزل المتغير (س) على جانب واحد",
-                "ابدأ بالتخلص من الثوابت قبل التعامل مع المعاملات"
-            ];
-            
-            const randomHint = hints[Math.floor(Math.random() * hints.length)];
-            showFeedback(randomHint, 'success');
-        }
-        
-        // عرض التغذية الراجعة
-        function showFeedback(message, type) {
-            const feedbackEl = document.getElementById('feedback');
-            feedbackEl.textContent = message;
-            feedbackEl.className = 'feedback ' + type;
-            feedbackEl.style.display = 'block';
-            
-            // إخفاء التغذية الراجعة بعد 3 ثوان
-            setTimeout(() => {
-                feedbackEl.style.display = 'none';
-            }, 3000);
-        }
-        
-        // التحقق من الحل
-        function checkSolution() {
-            // في تطبيق كامل، سيتم التحقق من الحل الفعلي
-            // هنا نستخدم محاكاة
-            
-            const isCorrect = Math.random() > 0.3; // محاكاة النجاح في أغلب الأحيان
-            
-            if (isCorrect) {
-                gameState.progress += 25;
-                updateProgressBar();
-                
-                if (gameState.progress >= 100) {
-                    showScreen('success-screen');
-                } else {
-                    showFeedback('أحسنت! استمر في التقدم', 'success');
-                    // تحميل معادلة جديدة بعد فترة
-                    setTimeout(() => loadRandomEquation(gameState.currentLevel), 2000);
-                }
-            } else {
-                showFeedback('حاول مرة أخرى. يمكنك استخدام التلميحات إذا احتجت مساعدة', 'error');
-            }
-        }
-        
-        // إعادة تعيين المعادلة
-        function resetEquation() {
-            loadRandomEquation(gameState.currentLevel);
-            showFeedback('تم إعادة تعيين المعادلة', 'success');
-        }
-        
-        // الانتقال إلى المستوى التالي
-        function nextLevel() {
-            if (gameState.currentLevel < levels.length) {
-                startGame(gameState.currentLevel + 1);
-            } else {
-                showFeedback('تهانينا! لقد أكملت جميع المستويات', 'success');
-                showScreen('level-select-screen');
-            }
-        }
-        
-        // تحديث شريط التقدم
-        function updateProgressBar() {
-            document.getElementById('progress-bar').style.width = gameState.progress + '%';
-        }
-        
-        // تهيئة أولية عند تحميل الصفحة
-        window.onload = function() {
-            // تحميل خط العربية إذا كان متاحاً
-            document.body.style.fontFamily = "'Cairo', Arial, sans-serif";
-            
-            // إضافة تأثيرات عند التحميل
-            document.querySelector('.game-character').classList.add('celebrate');
-        };
+
+        // المزيد من الوظائف التفاعلية ستُضاف هنا
     </script>
 </body>
 </html>
