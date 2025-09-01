@@ -1,165 +1,847 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>معادلاتي - مغامرة حل المعادلات</title>
-    <style>
-        /* تصميم CSS الكامل */
-        :root {
-            --primary-blue: #2575fc;
-            --primary-purple: #6a11cb;
-            --background-color: #f0f4f8;
-            --text-color: #333;
-        }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Equation Quest — Drag & Drop Linear Equations</title>
+<style>
+  :root{
+    --bg-1:#0f1226;
+    --bg-2:#1a1f3b;
+    --ink:#f5f7ff;
+    --muted:#b6b9d6;
+    --accent:#7cf3c6;
+    --accent-2:#8fb3ff;
+    --danger:#ff6b6b;
+    --warn:#ffd166;
+    --ok:#7cf3c6;
+    --card:#21264a;
+    --token:#2a3060;
+    --drop-ok:#1f7a4d55;
+    --drop-bad:#7a1f1f55;
+    --shadow:0 10px 25px rgba(0,0,0,.3);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+    color:var(--ink);
+    background: radial-gradient(1200px 800px at 80% -10%, #2b2f60 0%, transparent 60%),
+                radial-gradient(1200px 800px at 20% 120%, #1f244a 0%, transparent 60%),
+                linear-gradient(180deg, var(--bg-1), var(--bg-2));
+  }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Cairo', sans-serif;
-        }
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 20px; gap:12px;
+  }
+  .brand{
+    display:flex;align-items:center; gap:12px; font-weight:800; letter-spacing:.5px;
+  }
+  .brand .logo{
+    width:38px;height:38px;border-radius:9px;
+    background: conic-gradient(from 210deg, var(--accent), var(--accent-2));
+    box-shadow: var(--shadow);
+  }
+  .tagline{color:var(--muted); font-size:.9rem;}
 
-        body {
-            background-color: var(--background-color);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            text-align: center;
-        }
+  .hud{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .pill{
+    background: #1d2143; border:1px solid #2b3168; padding:8px 12px; border-radius:999px;
+    color:var(--ink); font-size:.9rem; display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn{
+    background: linear-gradient(180deg, #2e3571, #2a3060);
+    border:1px solid #3b4597; color:var(--ink); padding:8px 14px; border-radius:10px; cursor:pointer;
+    transition:transform .05s ease, background .2s ease, border-color .2s ease; box-shadow: var(--shadow); font-weight:600;
+  }
+  .btn:hover{ transform: translateY(-1px); }
+  .btn:active{ transform: translateY(1px); }
+  .btn.secondary{ background:#222756; border-color:#343c85; }
+  .btn.ghost{ background:transparent; border:1px dashed #3b4597; }
+  .btn.ok{ border-color:#2ea97a; background: linear-gradient(180deg, #1f6149, #1a523f); }
+  .btn.warn{ border-color:#caa245; background: linear-gradient(180deg, #5b4a1f, #4a3d1a); }
+  .btn.danger{ border-color:#a74040; background: linear-gradient(180deg, #613434, #4f2b2b); }
 
-        #game-container {
-            width: 100%;
-            max-width: 800px;
-            background-color: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            padding: 30px;
-            transition: all 0.3s ease;
-        }
+  main{
+    max-width:1100px; margin: 0 auto; padding: 10px 16px 40px;
+    display:grid; gap:16px;
+    grid-template-columns: 1fr;
+  }
 
-        /* تصميمات الشاشات والأزرار والعناصر التفاعلية */
-        .screen {
-            display: none;
-        }
+  /* Board */
+  .board{
+    background: #16193a99; border:1px solid #2e3574; border-radius:16px; padding:16px;
+    display:grid; gap:16px;
+  }
+  .goal{
+    display:flex; align-items:center; gap:10px; color:var(--muted);
+    font-size:.95rem;
+  }
+  .goal b{ color:var(--ink);}
+  .equation-wrap{
+    background:#171a3d; border:1px solid #2b3168; border-radius:14px; padding:10px;
+    display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; gap:10px;
+  }
+  .side{
+    min-height:88px; padding:10px; border-radius:10px; position:relative;
+    background: linear-gradient(180deg, #1a1f45, #171b3a);
+    border:1px dashed #37408e;
+    display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start;
+  }
+  .side[data-highlight="true"]{ outline:2px solid var(--accent); box-shadow: 0 0 0 3px #1f7a4d55 inset; }
+  .eq-sep{
+    font-weight:900; font-size:2.2rem; letter-spacing:2px; color:var(--accent-2);
+    padding:0 6px;
+  }
+  .eq-str{
+    color:var(--muted); font-size:.9rem; text-align:center;
+  }
 
-        .screen.active {
-            display: block;
-        }
+  .token{
+    background: var(--token);
+    border:1px solid #3b4597; color:var(--ink);
+    padding:10px 12px; border-radius:10px; font-weight:700;
+    display:inline-flex; align-items:center; gap:8px; cursor:grab; user-select:none;
+    box-shadow: var(--shadow);
+  }
+  .token:active{ cursor:grabbing; }
+  .token.xterm{ background: linear-gradient(180deg, #2a3066, #23285c);}
+  .token.const{ background: linear-gradient(180deg, #26305c, #202754);}
 
-        .btn {
-            background: linear-gradient(to right, var(--primary-blue), var(--primary-purple));
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
+  /* Apply bar */
+  .apply-bar{
+    padding:10px; border-radius:14px; border:1px solid #2b3168; background: #171a3d;
+    display:grid; gap:10px;
+  }
+  .apply-title{ color:var(--muted); font-size:.9rem; }
+  .slots{
+    display:grid; grid-template-columns: 1fr auto 1fr auto auto; align-items:center; gap:10px;
+  }
+  .slot{
+    min-height:54px; border:2px dashed #3b4597; border-radius:12px; display:flex; align-items:center; justify-content:center;
+    color:#9ca3e0; background:#1a1f45; padding:8px;
+  }
+  .slot[data-filled="true"]{
+    border-style: solid; border-color:#45a7ff; background:#1a243f;
+    color:var(--ink);
+  }
+  .slot.op{ min-width:120px;}
+  .slot.num{ min-width:160px;}
+  .apply-equals{ color:var(--muted); font-weight:800; }
+  .action-btns{ display:flex; gap:10px; justify-content:flex-end; }
+  .tiny{ font-size:.85rem; color:var(--muted); }
 
-        .btn:hover {
-            transform: scale(1.05);
-        }
+  /* Toolbox */
+  .toolbox{
+    display:grid; gap:12px; grid-template-columns: 1fr 2fr;
+  }
+  .tool{
+    background:#171a3d; border:1px solid #2b3168; border-radius:14px; padding:12px;
+  }
+  .tool h3{ margin:0 0 10px; font-size:1rem; color:var(--muted);}
+  .op-list,.num-list{
+    display:flex; flex-wrap:wrap; gap:10px;
+  }
+  .op-card, .num-card{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:10px 12px; border-radius:10px; border:1px solid #3b4597;
+    background:#242a5c; color:var(--ink); font-weight:800; min-width:48px;
+    cursor:grab; user-select:none; box-shadow: var(--shadow);
+  }
+  .op-card:active, .num-card:active{ cursor:grabbing; }
+  .op-add{ background: linear-gradient(180deg, #2a664d, #214f3d); border-color:#2ea97a;}
+  .op-sub{ background: linear-gradient(180deg, #5c3b2a, #4a3124); border-color:#c07c47;}
+  .op-mul{ background: linear-gradient(180deg, #2a3b66, #223054); border-color:#4b6cc9;}
+  .op-div{ background: linear-gradient(180deg, #3b2a66, #2f224f); border-color:#8b5ad1;}
 
-        /* تصميمات المعادلات والأدوات */
-        .equation-area {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #f9f9f9;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-        }
+  .num-card.bad{ background: linear-gradient(180deg, #613434, #4f2b2b); border-color:#a74040;}
+  .num-card.ok{ background: linear-gradient(180deg, #2a664d, #214f3d); border-color:#2ea97a;}
 
-        .draggable-tool {
-            background-color: var(--primary-blue);
-            color: white;
-            padding: 10px;
-            margin: 5px;
-            border-radius: 5px;
-            cursor: move;
-        }
-    </style>
+  /* Footer helpers */
+  .helper{
+    display:grid; grid-template-columns: 1fr 1fr; gap:16px;
+  }
+  .hint{
+    background:#171a3d; border:1px solid #2b3168; border-radius:14px; padding:12px; color:var(--muted);
+  }
+  .hint strong{ color:var(--ink); }
+  .controls{
+    display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; align-items:center;
+  }
+
+  /* Stars */
+  .stars{ display:inline-flex; gap:6px; }
+  .star{
+    width:18px; height:18px; display:inline-block; border-radius:50%;
+    background: radial-gradient(circle at 30% 30%, #fff8 0%, #fff0 60%), linear-gradient(180deg, #ffe27a, #ffaf1b);
+    opacity:.25;
+  }
+  .star.on{ opacity:1; }
+  .lvl-badge{
+    background:#1d2143; border:1px solid #2b3168; padding:6px 10px; border-radius:999px; display:inline-flex; gap:8px; align-items:center; color:var(--ink);
+  }
+
+  /* Toast */
+  .toast{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:18px; z-index:9999;
+    background:#121433cc; border:1px solid #2e3574; color:var(--ink); padding:10px 14px; border-radius:999px; display:flex; align-items:center; gap:8px;
+    box-shadow: var(--shadow);
+  }
+  .hidden{ display:none !important; }
+
+  /* Confetti (simple) */
+  .confetti{ position:fixed; left:0; top:0; width:100%; height:100%; pointer-events:none; overflow:hidden; z-index:9998; }
+  .confetti i{
+    position:absolute; width:10px; height:10px; background:var(--accent);
+    top:-10px; opacity:.9;
+  }
+</style>
 </head>
 <body>
-    <div id="game-container">
-        <!-- شاشة الترحيب -->
-        <div id="welcome-screen" class="screen active">
-            <h1>مرحباً بك في معادلاتي!</h1>
-            <p>مغامرة رائعة لتعلم حل المعادلات</p>
-            <button class="btn" onclick="startGame()">ابدأ المغامرة</button>
-        </div>
+<header>
+  <div class="brand">
+    <div class="logo" aria-hidden="true"></div>
+    <div>
+      <div>Equation Quest</div>
+      <div class="tagline">Master linear equations with drag & drop</div>
+    </div>
+  </div>
+  <div class="hud">
+    <span class="lvl-badge">Level <b id="levelIdx">1</b></span>
+    <span class="pill">Steps: <b id="steps">0</b></span>
+    <span class="pill">Score: <span class="stars" id="stars"><i class="star"></i><i class="star"></i><i class="star"></i></span></span>
+    <button class="btn secondary" id="btnPrev">Prev</button>
+    <button class="btn ok" id="btnNext">Next</button>
+    <button class="btn ghost" id="btnRandom">Random</button>
+  </div>
+</header>
 
-        <!-- شاشة اختيار المستوى -->
-        <div id="level-select-screen" class="screen">
-            <h2>اختر مستواك</h2>
-            <div class="level-buttons">
-                <button class="btn" onclick="startLevel(1)">المستوى 1: معادلات بسيطة</button>
-                <button class="btn" onclick="startLevel(2)">المستوى 2: جمع وطرح المتغيرات</button>
-                <button class="btn" onclick="startLevel(3)">المستوى 3: ضرب وقسمة المتغيرات</button>
-                <button class="btn" onclick="startLevel(4)">المستوى 4: معادلات متعددة الخطوات</button>
-            </div>
-        </div>
-
-        <!-- شاشة اللعبة الرئيسية -->
-        <div id="game-screen" class="screen">
-            <div class="equation-area" id="equation-container">
-                <!-- سيتم إنشاء المعادلات هنا ديناميكياً -->
-            </div>
-            <div class="tools-area" id="tools-container">
-                <!-- أدوات التفاعل مع المعادلات -->
-            </div>
-            <div class="progress-bar">
-                <!-- شريط التقدم -->
-            </div>
-        </div>
+<main>
+  <section class="board">
+    <div class="goal">
+      <span>Goal:</span>
+      <b>Make it look like x = number</b>
+      <span class="eq-str" id="eqStr"></span>
     </div>
 
-    <script>
-        // JavaScript التفاعلي
-        const levels = [
-            {
-                name: "معادلات بسيطة",
-                equations: [
-                    { left: "x + 2", right: "5", solution: 3 },
-                    { left: "x - 3", right: "4", solution: 7 }
-                ]
-            },
-            // سيتم إضافة باقي المستويات هنا
-        ];
+    <div class="equation-wrap">
+      <div class="side" id="lhs" aria-label="Left side (drag targets)" data-side="L"></div>
+      <div class="eq-sep">=</div>
+      <div class="side" id="rhs" aria-label="Right side (drag targets)" data-side="R"></div>
+    </div>
 
-        let currentLevel = 0;
-        let currentEquation = 0;
+    <div class="apply-bar">
+      <div class="apply-title">Apply the same operation to both sides (drag an operation and a number):</div>
+      <div class="slots">
+        <div class="slot op" id="slotOp" data-filled="false">Drop operation (+ − × ÷)</div>
+        <div class="apply-equals">with</div>
+        <div class="slot num" id="slotNum" data-filled="false">Drop a number (e.g., 1, 2, −3)</div>
+        <button class="btn" id="applyBtn" disabled>Apply</button>
+        <button class="btn ghost" id="clearSlotsBtn">Clear</button>
+      </div>
+      <div class="tiny">Tip: Adding/subtracting changes the constants. Multiplying/dividing scales both the x-term and the constant.</div>
+    </div>
 
-        function startGame() {
-            document.getElementById('welcome-screen').classList.remove('active');
-            document.getElementById('level-select-screen').classList.add('active');
-        }
+    <div class="toolbox">
+      <div class="tool">
+        <h3>Operations</h3>
+        <div class="op-list">
+          <div class="op-card op-add" draggable="true" data-type="op" data-op="add">+ (add)</div>
+          <div class="op-card op-sub" draggable="true" data-type="op" data-op="sub">− (subtract)</div>
+          <div class="op-card op-mul" draggable="true" data-type="op" data-op="mul">× (multiply)</div>
+          <div class="op-card op-div" draggable="true" data-type="op" data-op="div">÷ (divide)</div>
+        </div>
+      </div>
+      <div class="tool">
+        <h3>Numbers</h3>
+        <div class="num-list" id="numList"></div>
+      </div>
+    </div>
 
-        function startLevel(level) {
-            currentLevel = level - 1;
-            document.getElementById('level-select-screen').classList.remove('active');
-            document.getElementById('game-screen').classList.add('active');
-            loadEquation();
-        }
+    <div class="helper">
+      <div class="hint" id="hintBox">
+        <strong>Hint:</strong> Collect all x on one side by dragging an x-term to the other side, then remove constants from the x-side. Finally, divide or multiply to make the x coefficient 1.
+      </div>
+      <div class="controls">
+        <button class="btn secondary" id="btnHint">Get hint</button>
+        <button class="btn secondary" id="btnUndo">Undo</button>
+        <button class="btn secondary" id="btnRedo">Redo</button>
+        <button class="btn warn" id="btnReset">Reset level</button>
+      </div>
+    </div>
+  </section>
+</main>
 
-        function loadEquation() {
-            const equationContainer = document.getElementById('equation-container');
-            const currentLevelData = levels[currentLevel];
-            const equation = currentLevelData.equations[currentEquation];
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+<div id="confetti" class="confetti"></div>
 
-            // سيتم إنشاء المعادلة بشكل تفاعلي
-            equationContainer.innerHTML = `
-                <div class="equation">
-                    <span>${equation.left}</span> = 
-                    <span>${equation.right}</span>
-                </div>
-            `;
-        }
+<script>
+/* Equation Quest
+   A single-file drag & drop game for learning to solve first-degree equations.
+   - UI text and code comments are in English (as requested).
+   - Core idea: balance both sides. You can:
+      1) Drag a term (x-term or constant) across the equal sign -> it adds the opposite term to both sides.
+      2) Use the apply bar to add/subtract/multiply/divide both sides by a number.
+   - Focus: ax + b = cx + d
+*/
 
-        // المزيد من الوظائف التفاعلية ستُضاف هنا
-    </script>
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+/* State */
+const state = {
+  levelIndex: 0,
+  steps: 0,
+  history: [],
+  future: [],
+  solved: false,
+  // equation is represented as left: aL*x + bL, right: aR*x + bR
+  aL: 1, bL: 3, aR: 0, bR: 7,
+};
+
+const levels = [
+  // Simple 1-step
+  { aL:1, bL:3, aR:0, bR:7, name:"x + 3 = 7" },
+  { aL:1, bL:-4, aR:0, bR:9, name:"x - 4 = 9" },
+  { aL:2, bL:0, aR:0, bR:8, name:"2x = 8" },
+  { aL:3, bL:2, aR:0, bR:11, name:"3x + 2 = 11" },
+  { aL:-2,bL:5, aR:0, bR:9, name:"-2x + 5 = 9" },
+  { aL:1, bL:-5, aR:0, bR:-2, name:"x - 5 = -2" },
+  { aL:4, bL:-3, aR:0, bR:13, name:"4x - 3 = 13" },
+  { aL:-3,bL:-9,aR:0, bR:6, name:"-3x - 9 = 6" },
+  // x on both sides
+  { aL:5, bL:7, aR:2, bR:19, name:"5x + 7 = 2x + 19" },
+  { aL:-2,bL:8, aR:1, bR:-4, name:"-2x + 8 = x - 4" },
+  { aL:6, bL:-4, aR:2, bR:12, name:"6x - 4 = 2x + 12" },
+  { aL:-1,bL:10, aR:3, bR:-2, name:"-x + 10 = 3x - 2" },
+  // fractional coefficients (use multiply/divide to fix)
+  { aL:0.5,bL:7, aR:0, bR:12, name:"0.5x + 7 = 12" },
+  { aL:-0.5,bL:-6, aR:1, bR:-9, name:"-0.5x - 6 = x - 9" },
+  { aL:2, bL:3, aR:-3,bR:-12, name:"2x + 3 = -3x - 12" },
+];
+
+/* Utilities */
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+const round6 = n => {
+  let r = Math.round(n * 1e6)/1e6;
+  if (Math.abs(r) < 1e-10) r = 0;
+  return r;
+};
+function formatNum(n){
+  n = round6(n);
+  const s = n.toFixed(6).replace(/\.?0+$/,'');
+  return s;
+}
+function fmtTerm(a, variable=true){
+  // Format ax term (e.g., x, -x, 2x). If a==0 return empty.
+  if (a === 0) return '';
+  if (!variable) return (a>0?'+ ':'- ') + formatNum(Math.abs(a));
+  if (a === 1) return 'x';
+  if (a === -1) return '-x';
+  return formatNum(a) + 'x';
+}
+function fmtSide(a,b){
+  // Build a nice string for one side a*x + b
+  const parts = [];
+  if (a !== 0) parts.push(fmtTerm(a, true));
+  if (b !== 0) {
+    if (parts.length===0){
+      // first term, just number (with sign if negative)
+      parts.push(formatNum(b));
+    } else {
+      // add with sign and space
+      parts.push((b>0?'+ ':'- ') + formatNum(Math.abs(b)));
+    }
+  }
+  if (parts.length===0) return '0';
+  return parts.join(' ');
+}
+function eqString(){
+  return fmtSide(state.aL, state.bL) + ' = ' + fmtSide(state.aR, state.bR);
+}
+function copyEq(){
+  return { aL:state.aL, bL:state.bL, aR:state.aR, bR:state.bR };
+}
+function setEq(obj){
+  state.aL = round6(obj.aL); state.bL = round6(obj.bL);
+  state.aR = round6(obj.aR); state.bR = round6(obj.bR);
+}
+function pushHistory(label){
+  state.history.push({ ...copyEq(), steps:state.steps, label });
+  if (state.history.length>200) state.history.shift();
+  state.future.length = 0; // clear redo on new action
+}
+function toast(msg, type='info'){
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  setTimeout(()=> el.classList.add('hidden'), 1800);
+}
+
+/* Drag & Drop helpers */
+function asPayload(e){
+  try { return JSON.parse(e.dataTransfer.getData('text/plain')); } catch(_){ return null; }
+}
+function allowDrop(e){ e.preventDefault(); }
+
+/* Rendering */
+function renderEquation(){
+  $('#eqStr').textContent = 'Current: ' + eqString();
+
+  const lhs = $('#lhs');
+  const rhs = $('#rhs');
+  lhs.innerHTML = ''; rhs.innerHTML = '';
+
+  // Build tokens for left side
+  if (state.aL !== 0){
+    const t = document.createElement('div');
+    t.className = 'token xterm';
+    t.textContent = fmtTerm(state.aL, true);
+    t.draggable = true;
+    t.dataset.type = 'term';
+    t.dataset.term = 'x';
+    t.dataset.side = 'L';
+    t.title = 'Drag to the other side to move this x-term';
+    t.addEventListener('dragstart', termDragStart);
+    lhs.appendChild(t);
+  }
+  if (state.bL !== 0){
+    const t = document.createElement('div');
+    t.className = 'token const';
+    t.textContent = formatNum(state.bL);
+    t.draggable = true;
+    t.dataset.type = 'term';
+    t.dataset.term = 'c';
+    t.dataset.side = 'L';
+    t.title = 'Drag to the other side to move this constant';
+    t.addEventListener('dragstart', termDragStart);
+    lhs.appendChild(t);
+  }
+
+  // Build tokens for right side
+  if (state.aR !== 0){
+    const t = document.createElement('div');
+    t.className = 'token xterm';
+    t.textContent = fmtTerm(state.aR, true);
+    t.draggable = true;
+    t.dataset.type = 'term';
+    t.dataset.term = 'x';
+    t.dataset.side = 'R';
+    t.title = 'Drag to the other side to move this x-term';
+    t.addEventListener('dragstart', termDragStart);
+    rhs.appendChild(t);
+  }
+  if (state.bR !== 0){
+    const t = document.createElement('div');
+    t.className = 'token const';
+    t.textContent = formatNum(state.bR);
+    t.draggable = true;
+    t.dataset.type = 'term';
+    t.dataset.term = 'c';
+    t.dataset.side = 'R';
+    t.title = 'Drag to the other side to move this constant';
+    t.addEventListener('dragstart', termDragStart);
+    rhs.appendChild(t);
+  }
+
+  // Make sides droppable for term moves
+  [lhs, rhs].forEach(side=>{
+    side.addEventListener('dragover', allowDrop);
+    side.addEventListener('drop', sideDrop);
+    side.addEventListener('dragleave', e=> side.dataset.highlight = 'false');
+  });
+
+  // Star rating
+  renderStars();
+}
+function renderStars(){
+  // Simple heuristic: <=3 steps: 3 stars; <=6: 2 stars; else 1
+  const steps = state.steps;
+  const stars = $('#stars').children;
+  const on = steps <= 3 ? 3 : steps <= 6 ? 2 : 1;
+  for(let i=0;i<stars.length;i++){
+    stars[i].classList.toggle('on', i < on);
+  }
+  $('#steps').textContent = steps;
+  $('#levelIdx').textContent = (state.levelIndex+1);
+}
+function renderSlots(){
+  const slotOp = $('#slotOp');
+  const slotNum = $('#slotNum');
+  const applyBtn = $('#applyBtn');
+  // Update visual state
+  slotOp.textContent = slotOp.dataset.label || 'Drop operation (+ − × ÷)';
+  slotNum.textContent = slotNum.dataset.label || 'Drop a number (e.g., 1, 2, −3)';
+  slotOp.dataset.filled = slotOp.dataset.has ? 'true' : 'false';
+  slotNum.dataset.filled = slotNum.dataset.has ? 'true' : 'false';
+  const ready = !!slotOp.dataset.has && !!slotNum.dataset.has;
+  applyBtn.disabled = !ready || state.solved;
+}
+function clearSlots(){
+  const slotOp = $('#slotOp');
+  const slotNum = $('#slotNum');
+  delete slotOp.dataset.has;
+  delete slotOp.dataset.op;
+  delete slotOp.dataset.label;
+  delete slotNum.dataset.has;
+  delete slotNum.dataset.num;
+  delete slotNum.dataset.label;
+  renderSlots();
+}
+
+/* Term dragging */
+function termDragStart(e){
+  const t = e.currentTarget;
+  const payload = { kind:'term', side:t.dataset.side, term:t.dataset.term };
+  e.dataTransfer.setData('text/plain', JSON.stringify(payload));
+  e.dataTransfer.effectAllowed = 'move';
+}
+function sideDrop(e){
+  e.preventDefault();
+  const targetSide = e.currentTarget.id === 'lhs' ? 'L' : 'R';
+  const payload = asPayload(e);
+  e.currentTarget.dataset.highlight = 'false';
+
+  if (!payload || payload.kind!=='term'){ return; }
+
+  const from = payload.side;
+  const term = payload.term; // 'x' or 'c'
+  if (from === targetSide){
+    toast('That term is already on this side.');
+    return;
+  }
+  // Apply "move term across equals" — subtract that term from both sides
+  pushHistory(`Move ${term}-term ${from}→${targetSide}`);
+
+  if (from === 'L' && targetSide === 'R'){
+    if (term === 'x'){
+      const delta = state.aL;
+      state.aL = round6(state.aL - delta);
+      state.aR = round6(state.aR - delta);
+    } else {
+      const delta = state.bL;
+      state.bL = round6(state.bL - delta);
+      state.bR = round6(state.bR - delta);
+    }
+  } else if (from === 'R' && targetSide === 'L'){
+    if (term === 'x'){
+      const delta = state.aR;
+      state.aR = round6(state.aR - delta);
+      state.aL = round6(state.aL - delta);
+    } else {
+      const delta = state.bR;
+      state.bR = round6(state.bR - delta);
+      state.bL = round6(state.bL - delta);
+    }
+  }
+  stepIfEffective();
+  evaluateSolved();
+  renderEquation();
+}
+
+/* Operation dragging (apply bar) */
+function initSlotDnD(){
+  const slotOp = $('#slotOp');
+  const slotNum = $('#slotNum');
+
+  [slotOp, slotNum].forEach(slot=>{
+    slot.addEventListener('dragover', e=>{
+      const payload = asPayload(e);
+      if (!payload) return;
+      const good = (slot.id==='slotOp' && payload.kind==='op') || (slot.id==='slotNum' && payload.kind==='num');
+      if (good){ e.preventDefault(); slot.dataset.filled = 'true'; } else { slot.dataset.filled='false'; }
+    });
+    slot.addEventListener('dragleave', e=> slot.dataset.filled = slot.dataset.has ? 'true' : 'false');
+  });
+
+  slotOp.addEventListener('drop', e=>{
+    e.preventDefault();
+    const payload = asPayload(e);
+    if (!payload || payload.kind!=='op') return;
+    slotOp.dataset.has = '1';
+    slotOp.dataset.op = payload.op;
+    slotOp.dataset.label = opLabel(payload.op);
+    renderSlots();
+  });
+
+  slotNum.addEventListener('drop', e=>{
+    e.preventDefault();
+    const payload = asPayload(e);
+    if (!payload || payload.kind!=='num') return;
+    slotNum.dataset.has = '1';
+    slotNum.dataset.num = String(payload.value);
+    slotNum.dataset.label = formatNum(payload.value);
+    renderSlots();
+  });
+
+  $('#applyBtn').addEventListener('click', applyOpFromSlots);
+  $('#clearSlotsBtn').addEventListener('click', clearSlots);
+}
+function opLabel(op){
+  switch(op){
+    case 'add': return '+ (add)';
+    case 'sub': return '− (subtract)';
+    case 'mul': return '× (multiply)';
+    case 'div': return '÷ (divide)';
+  }
+  return op;
+}
+function applyOpFromSlots(){
+  const op = $('#slotOp').dataset.op;
+  const num = parseFloat($('#slotNum').dataset.num);
+  if (!op || Number.isNaN(num)) return;
+  if (op==='div' && num===0){ toast('Cannot divide by 0', 'warn'); return; }
+  if (op==='mul' && num===0){ toast('Multiplying by 0 destroys information — not allowed here'); return; }
+
+  pushHistory(`Both-sides ${op} ${num}`);
+  const before = copyEq();
+
+  if (op==='add'){
+    state.bL = round6(state.bL + num);
+    state.bR = round6(state.bR + num);
+  } else if (op==='sub'){
+    state.bL = round6(state.bL - num);
+    state.bR = round6(state.bR - num);
+  } else if (op==='mul'){
+    state.aL = round6(state.aL * num);
+    state.bL = round6(state.bL * num);
+    state.aR = round6(state.aR * num);
+    state.bR = round6(state.bR * num);
+  } else if (op==='div'){
+    state.aL = round6(state.aL / num);
+    state.bL = round6(state.bL / num);
+    state.aR = round6(state.aR / num);
+    state.bR = round6(state.bR / num);
+  }
+
+  clearSlots();
+  if (!sameEq(before, copyEq())){
+    state.steps++;
+  }
+  evaluateSolved();
+  renderEquation();
+}
+function sameEq(e1, e2){
+  return e1.aL===e2.aL && e1.bL===e2.bL && e1.aR===e2.aR && e1.bR===e2.bR;
+}
+function stepIfEffective(){
+  state.steps++;
+}
+
+/* Numbers toolbox */
+function populateNumbers(){
+  const list = $('#numList');
+  list.innerHTML = '';
+  const nums = [];
+  for (let n=-9;n<=9;n++) if (n!==0) nums.push(n);
+  // Add some extras
+  [10, -10, 0.5, -0.5, 2, -2, 3, -3].forEach(n=>{ if (!nums.includes(n)) nums.push(n); });
+  nums.forEach(n=>{
+    const el = document.createElement('div');
+    el.className = 'num-card' + (n===0 ? ' bad' : (Math.abs(n)<=3 ? ' ok' : ''));
+    el.textContent = n.toString().replace('-', '−');
+    el.draggable = true;
+    el.dataset.type = 'num';
+    el.dataset.value = String(n);
+    el.addEventListener('dragstart', e=>{
+      e.dataTransfer.setData('text/plain', JSON.stringify({kind:'num', value:n}));
+      e.dataTransfer.effectAllowed='copy';
+    });
+    list.appendChild(el);
+  });
+}
+
+/* Operation toolbox DnD */
+$$('.op-card').forEach(op=>{
+  op.addEventListener('dragstart', e=>{
+    const opKind = op.dataset.op;
+    e.dataTransfer.setData('text/plain', JSON.stringify({kind:'op', op:opKind}));
+    e.dataTransfer.effectAllowed='copy';
+  });
+});
+
+/* Side highlight on dragover */
+['lhs','rhs'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('dragenter', e=>{
+    const payload = asPayload(e);
+    el.dataset.highlight = payload && payload.kind==='term' ? 'true' : 'false';
+  });
+});
+
+/* Solved check & win effects */
+function evaluateSolved(){
+  // Solved if one side is exactly x (a=1,b=0) and the other has no x (a=0)
+  const leftIsX = state.aL===1 && state.bL===0 && state.aR===0;
+  const rightIsX= state.aR===1 && state.bR===0 && state.aL===0;
+  if (leftIsX || rightIsX){
+    state.solved = true;
+    const val = leftIsX ? state.bR : state.bL; // whichever opposite constant
+    celebrate(`Solved! x = ${formatNum(val)}  🎉`);
+    $('#applyBtn').disabled = true;
+    return true;
+  }
+  return false;
+}
+function celebrate(msg){
+  toast(msg);
+  fireConfetti();
+}
+
+/* Confetti (simple) */
+function fireConfetti(){
+  const layer = $('#confetti');
+  layer.innerHTML = '';
+  const colors = ['#7cf3c6','#8fb3ff','#ffd166','#ff6b6b','#c3f584','#b592ff'];
+  const pieces = 80;
+  for (let i=0;i<pieces;i++){
+    const iel = document.createElement('i');
+    const size = 6 + Math.random()*8;
+    iel.style.width = size+'px';
+    iel.style.height = size+'px';
+    iel.style.left = (Math.random()*100)+'%';
+    iel.style.background = colors[(Math.random()*colors.length)|0];
+    iel.style.opacity = 0.85;
+    const duration = 3 + Math.random()*2;
+    const delay = Math.random()*0.2;
+    iel.animate([
+      { transform:`translateY(-10px) rotate(0deg)`, top:'-10px', opacity:1 },
+      { transform:`translateY(100vh) rotate(${Math.random()*720-360}deg)`, top:'100vh', opacity:0.9 }
+    ], { duration: duration*1000, delay: delay*1000, easing:'cubic-bezier(.25,.7,.2,1)' });
+    layer.appendChild(iel);
+  }
+  setTimeout(()=> layer.innerHTML='', 4000);
+}
+
+/* Hints */
+function getHint(){
+  const {aL,bL,aR,bR} = state;
+  // 1) If x appears on both sides, suggest moving one x-term
+  if (aL!==0 && aR!==0){
+    const move = Math.abs(aL) <= Math.abs(aR) ? 'R→L' : 'L→R';
+    return `Collect x on one side: drag the x-term ${move} to remove it from that side.`;
+  }
+  // 2) If x is on left only
+  if (aL!==0 && aR===0){
+    if (bL!==0) return `Remove the constant from the x-side: drag ${formatNum(bL)} to the right, or use ${bL>0? 'subtract':'add'} ${formatNum(Math.abs(bL))}.`;
+    if (aL!==1) return `Make the x coefficient 1: use ÷ ${formatNum(aL)} (or × ${formatNum(1/aL)}).`;
+    return `You're almost done: it should look like x = number.`;
+  }
+  // 3) If x is on right only
+  if (aR!==0 && aL===0){
+    if (bR!==0) return `Remove the constant from the x-side: drag ${formatNum(bR)} to the left, or use ${bR>0? 'subtract':'add'} ${formatNum(Math.abs(bR))}.`;
+    if (aR!==1) return `Make the x coefficient 1: use ÷ ${formatNum(aR)} (or × ${formatNum(1/aR)}).`;
+    return `You're almost done: it should look like number = x (which also means x = number).`;
+  }
+  // 4) No x at all — degenerate (shouldn't happen in our levels)
+  return `Try using the operation bar to transform the equation.`;
+}
+
+/* Controls */
+function loadLevel(i){
+  state.levelIndex = clamp(i, 0, levels.length-1);
+  const lvl = levels[state.levelIndex];
+  setEq(lvl);
+  state.steps = 0;
+  state.history = [];
+  state.future = [];
+  state.solved = false;
+  clearSlots();
+  $('#hintBox').innerHTML = `<strong>Hint:</strong> ${getHint()}`;
+  renderEquation();
+}
+function nextLevel(){
+  if (state.levelIndex < levels.length-1){
+    loadLevel(state.levelIndex+1);
+  } else {
+    // Random after last
+    randomLevel();
+  }
+}
+function prevLevel(){
+  if (state.levelIndex>0) loadLevel(state.levelIndex-1);
+}
+function resetLevel(){
+  loadLevel(state.levelIndex);
+}
+function randomLevel(){
+  // Generate a random solvable linear equation ax+b = cx+d with integer solution
+  // Choose x solution s in [-9..9] not zero often
+  let s = (Math.random()<0.5?1:-1) * (1 + (Math.random()*9|0));
+  // Choose coefficients
+  let aL = randFrom([-5,-4,-3,-2,-1,1,2,3,4,5]);
+  let aR = randFrom([-5,-4,-3,-2,-1,0,1,2,3,4,5]);
+  if (aL===aR){ aR += (aR>=0?1:-1); }
+  // Build constants so that x=s satisfies
+  // Pick random bL, then compute bR to satisfy equality
+  let bL = randFrom([-9,-7,-5,-3,-2,-1,0,1,2,3,5,7,9]);
+  let bR = aL*s + bL - aR*s;
+  setEq({aL,bL,aR,bR});
+  state.levelIndex = levels.length-1; // show as last idx for badge
+  state.steps = 0;
+  state.history = [];
+  state.future = [];
+  state.solved = false;
+  clearSlots();
+  $('#hintBox').innerHTML = `<strong>Hint:</strong> ${getHint()}`;
+  renderEquation();
+}
+function randFrom(arr){ return arr[(Math.random()*arr.length)|0]; }
+
+/* Undo/Redo */
+function undo(){
+  const last = state.history.pop();
+  if (!last){ toast('Nothing to undo'); return; }
+  state.future.push({ ...copyEq(), steps:state.steps });
+  setEq(last);
+  state.steps = last.steps;
+  state.solved = false;
+  renderEquation();
+}
+function redo(){
+  const next = state.future.pop();
+  if (!next){ toast('Nothing to redo'); return; }
+  state.history.push({ ...copyEq(), steps:state.steps });
+  setEq(next);
+  state.steps = next.steps;
+  renderEquation();
+}
+
+/* Event bindings */
+$('#btnNext').addEventListener('click', nextLevel);
+$('#btnPrev').addEventListener('click', prevLevel);
+$('#btnReset').addEventListener('click', resetLevel);
+$('#btnRandom').addEventListener('click', randomLevel);
+$('#btnHint').addEventListener('click', ()=> $('#hintBox').innerHTML = `<strong>Hint:</strong> ${getHint()}`);
+
+$('#btnUndo').addEventListener('click', undo);
+$('#btnRedo').addEventListener('click', redo);
+
+/* Init */
+populateNumbers();
+initSlotDnD();
+loadLevel(0);
+renderSlots();
+
+/* Keyboard shortcuts (optional) */
+window.addEventListener('keydown', e=>{
+  if (e.key==='z' && (e.ctrlKey||e.metaKey)) { e.preventDefault(); undo(); }
+  if (e.key==='y' && (e.ctrlKey||e.metaKey)) { e.preventDefault(); redo(); }
+});
+
+/* Accessibility: show side highlight only when dragging terms */
+['dragenter','dragover'].forEach(evt=>{
+  ['lhs','rhs'].forEach(id=>{
+    document.getElementById(id).addEventListener(evt, e=>{
+      const payload = asPayload(e);
+      e.currentTarget.dataset.highlight = payload && payload.kind==='term' ? 'true' : 'false';
+    });
+  });
+});
+</script>
 </body>
 </html>
