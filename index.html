@@ -188,6 +188,7 @@
                     const c = 1;
                     const b = Math.floor(Math.random() * 10) - 5; // -5 to 4
                     const d = (a - c) * x + b;
+                    // Randomly place terms
                     const sideA = Math.random() > 0.5;
                     return {
                         left: { x: sideA ? a : c, gems: sideA ? b : d },
@@ -289,24 +290,18 @@
                                      .reduce((sum, el) => sum + parseInt(el.dataset.value), 0);
                 
                 let parts = [];
-                if (totalX !== 0) {
-                    if (totalX === 1) parts.push('س');
-                    else if (totalX === -1) parts.push('-س');
-                    else parts.push(`${totalX}س`);
-                }
-                
+                if (totalX !== 0) parts.push(totalX === 1 ? 'س' : totalX === -1 ? '-س' : `${totalX}س`);
                 if (totalGems !== 0) {
-                     if(parts.length > 0 && totalGems > 0) parts.push(`+ ${totalGems}`);
-                     else if (parts.length > 0 && totalGems < 0) parts.push(`- ${Math.abs(totalGems)}`);
-                     else parts.push(`${totalGems}`);
+                     if(parts.length > 0) parts.push(totalGems > 0 ? `+ ${totalGems}` : `- ${Math.abs(totalGems)}`);
+                     else parts.push(totalGems > 0 ? `${totalGems}` : `-${Math.abs(totalGems)}`)
                 }
-                
                 if (parts.length === 0) return '0';
                 return parts.join(' ');
             };
             
             equationDisplay.textContent = `${getSideStr(leftSide)} = ${getSideStr(rightSide)}`;
         }
+
 
         // --- Drag and Drop Logic ---
         function addDragListeners() {
@@ -328,7 +323,11 @@
             setTimeout(() => e.target.style.opacity = '0.5', 0);
         }
 
-        function handleDragOver(e) { e.preventDefault(); this.classList.add('drag-over'); }
+        function handleDragOver(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        }
+
         function handleDragLeave() { this.classList.remove('drag-over'); }
 
         function handleDrop(e) {
@@ -343,13 +342,14 @@
             const type = draggedItem.dataset.type;
             const value = parseInt(draggedItem.dataset.value);
 
-            createItems(-value, type.includes('x') ? 'x' : 'gem', this);
+            createItems(type.includes('x') ? -value : -value, type.includes('x') ? 'x' : 'gem', this);
             draggedItem.parentElement.removeChild(draggedItem);
 
             draggedItem = null;
             simplifyAndCheck();
         }
         
+        // --- Touch Event Handlers ---
         let clone;
         function handleTouchStart(e) {
             e.preventDefault();
@@ -400,7 +400,7 @@
             if (dropTarget && dropTarget !== draggedItem.parentElement) {
                  const type = draggedItem.dataset.type;
                  const value = parseInt(draggedItem.dataset.value);
-                 createItems(-value, type.includes('x') ? 'x' : 'gem', dropTarget);
+                 createItems(type.includes('x') ? -value : -value, type.includes('x') ? 'x' : 'gem', dropTarget);
                  draggedItem.parentElement.removeChild(draggedItem);
                  simplifyAndCheck();
             } else {
@@ -419,11 +419,10 @@
             setTimeout(checkGameState, 700);
         }
 
-        // --- 💡 FIX: This function now correctly combines gems ---
         function simplifySide(side) {
-            // Simplify gems: Always combine all gems into one.
+            // Simplify gems
             let gems = Array.from(side.querySelectorAll('[data-type="gem"]'));
-            if (gems.length > 0) { // Condition changed from > 1 to > 0
+            if (gems.length > 1) {
                 const totalValue = gems.reduce((sum, g) => sum + parseInt(g.dataset.value), 0);
                 gems.forEach(g => g.remove());
                 if (totalValue !== 0) createItems(totalValue, 'gem', side);
@@ -438,11 +437,12 @@
                 xBoxes[i].classList.add('canceling');
                 antiXBoxes[i].classList.add('canceling');
                 setTimeout(() => {
-                    xBoxes[i]?.remove();
-                    antiXBoxes[i]?.remove();
+                    xBoxes[i].remove();
+                    antiXBoxes[i].remove();
+                    updateEquationDisplay();
+                    addDragListeners();
                 }, 450);
             }
-            
             setTimeout(() => {
                 updateEquationDisplay();
                 addDragListeners();
@@ -457,15 +457,10 @@
             const rightAntiX = rightSide.querySelectorAll('[data-type="anti-x"]').length;
             const rightGems = rightSide.querySelectorAll('[data-type="gem"]').length;
 
-            const isLeftSimplified = leftAntiX === 0 && leftGems <= 1;
-            const isRightSimplified = rightAntiX === 0 && rightGems <= 1;
-
-            if (!isLeftSimplified || !isRightSimplified) return;
-
-            const xOnLeft = leftX > 0 && leftGems === 0;
-            const xOnRight = rightX > 0 && rightGems === 0;
-            const gemsOnLeft = leftGems === 1 && leftX === 0;
-            const gemsOnRight = rightGems === 1 && rightX === 0;
+            const xOnLeft = leftX > 0 && leftAntiX === 0 && leftGems === 0;
+            const xOnRight = rightX > 0 && rightAntiX === 0 && rightGems === 0;
+            const gemsOnLeft = leftGems === 1 && leftX === 0 && leftAntiX === 0;
+            const gemsOnRight = rightGems === 1 && rightX === 0 && rightAntiX === 0;
             
             // Win condition: x = number
             if ((xOnLeft && leftX === 1 && gemsOnRight) || (xOnRight && rightX === 1 && gemsOnLeft)) {
@@ -494,23 +489,19 @@
 
             if (xCount > 0 && gemValue % xCount === 0) {
                 const finalValue = gemValue / xCount;
-                divideBtn.classList.add('hidden');
 
-                // Animate old items away
-                Array.from(xSide.children).forEach(c => c.classList.add('canceling'));
-                Array.from(gemSide.children).forEach(c => c.classList.add('canceling'));
+                // Animation
+                xSide.innerHTML = '';
+                gemSide.innerHTML = '';
+                createItems(1, 'x', xSide);
+                createItems(finalValue, 'gem', gemSide);
+                
+                divideBtn.classList.add('hidden');
+                updateEquationDisplay();
+                addDragListeners();
 
                 setTimeout(() => {
-                    xSide.innerHTML = '';
-                    gemSide.innerHTML = '';
-                    // Place final result
-                    createItems(1, 'x', xSide);
-                    createItems(finalValue, 'gem', gemSide);
-                    updateEquationDisplay();
-                    addDragListeners();
-
-                    // Check for win after animation
-                    if (finalValue === gameState.solution) {
+                     if (finalValue === gameState.solution) {
                         showSuccessModal(finalValue);
                     }
                 }, 500);
@@ -543,6 +534,8 @@
 
         // --- Initial Load ---
         generateEquation();
+
     </script>
 </body>
 </html>
+
