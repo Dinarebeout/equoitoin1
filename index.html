@@ -1,541 +1,166 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>معادلات الميزان</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Cairo', sans-serif;
-            touch-action: none; /* يمنع التمرير على أجهزة اللمس */
-        }
-        .balance-beam {
-            height: 12px;
-            width: 90%;
-            background: #78350f; /* brown-800 */
-            border-radius: 6px;
-            position: relative;
-        }
-        .fulcrum {
-            width: 0;
-            height: 0;
-            border-left: 30px solid transparent;
-            border-right: 30px solid transparent;
-            border-top: 40px solid #78350f; /* brown-800 */
-        }
-        .equation-side {
-            width: 45%;
-            min-height: 200px;
-            border: 3px dashed #eab308; /* yellow-500 */
-            border-radius: 16px;
-            padding: 16px;
-            transition: background-color 0.3s, transform 0.2s;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-content: flex-start;
-        }
-        .equation-side.drag-over {
-            background-color: #fef9c3; /* yellow-100 */
-            transform: scale(1.02);
-        }
-        .item {
-            width: 60px;
-            height: 60px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: white;
-            cursor: grab;
-            user-select: none;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1), inset 0 -4px 4px rgba(0,0,0,0.2);
-        }
-        .item:active {
-            cursor: grabbing;
-            transform: scale(1.1);
-            z-index: 100;
-        }
-        .x-box {
-            background-color: #be123c; /* rose-700 */
-            font-family: monospace;
-        }
-        .anti-x-box {
-            background-color: #44403c; /* stone-700 */
-            font-family: monospace;
-        }
-        .gem-pos {
-            background-color: #16a34a; /* green-600 */
-            border-radius: 50%;
-        }
-        .gem-neg {
-            background-color: #dc2626; /* red-600 */
-            border-radius: 50%;
-        }
-        .feedback-modal {
-            transition: opacity 0.5s, transform 0.5s;
-        }
-        .feedback-modal.hidden {
-            opacity: 0;
-            transform: scale(0.8);
-            pointer-events: none;
-        }
-        /* Animation for canceling out */
-        .canceling {
-            animation: cancel-out 0.5s forwards;
-        }
-        @keyframes cancel-out {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(0); opacity: 0; }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Équilibra‑Maths — Drag & Drop (fix boutons)</title>
+  <style>
+    :root{--bg:#f5f9ff;--card:#fff;--accent:#3b82f6;--danger:#ef4444;--text:#0b2540}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;align-items:center}
+    header{width:100%;padding:12px 16px;background:linear-gradient(90deg,var(--accent),#6fb3ff);color:white;display:flex;align-items:center;justify-content:space-between}
+    header h1{margin:0;font-size:1rem}
+    .container{width:100%;max-width:980px;padding:16px}
+    .card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 6px 18px rgba(16,24,40,0.06)}
+    .center{text-align:center}
+    .equation{font-size:1.8rem;font-weight:700;margin:8px 0}
+    #balanceWrap{display:flex;justify-content:center;margin:8px 0}
+    svg#balance{width:320px;height:160px}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:8px 0}
+    .opTile{background:#e6f0ff;border-radius:12px;padding:10px 14px;font-weight:700;border:2px solid transparent;cursor:grab;user-select:none}
+    .opTile:active{cursor:grabbing}
+    .opTile.selected{box-shadow:0 6px 20px rgba(59,130,246,0.18);border-color:rgba(59,130,246,0.35)}
+    .answerRow{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:12px}
+    input[type=text]{padding:8px 10px;border-radius:8px;border:1px solid #ddd;width:120px;text-align:center}
+    button.btn{background:var(--accent);border:none;color:white;padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+    .feedback{min-height:48px;text-align:center;margin-top:10px}
+    .progressRow{display:flex;gap:8px;justify-content:center;margin:8px}
+    .star{font-size:1.6rem;color:#ddd}
+    .star.active{color:gold}
+
+    /* full-screen encouragement overlay */
+    .overlay{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(3,7,18,0.7);display:flex;align-items:center;justify-content:center;z-index:999;opacity:0;pointer-events:none;transition:opacity .25s}
+    .overlay.show{opacity:1;pointer-events:auto}
+    .overlay .card{max-width:760px;text-align:center;transform:translateY(-10px);animation:pop .35s ease forwards}
+    @keyframes pop{from{transform:translateY(10px) scale(.98);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+
+    .floatClone{position:fixed;z-index:1000;pointer-events:none;transform:translate(-50%,-50%);opacity:.95}
+
+    @media(max-width:520px){ svg#balance{width:260px;height:130px} }
+  </style>
 </head>
-<body class="bg-amber-50 antialiased text-amber-900" dir="rtl">
+<body>
+  <header>
+    <h1>Équilibra‑Maths ⚖️ — Drag & Drop</h1>
+    <div style="font-size:.9rem;color:rgba(255,255,255,0.9)">Tutoriel → niveaux → défi</div>
+  </header>
 
-    <div class="container mx-auto p-4 md:p-8 max-w-4xl text-center">
-        <header class="mb-6">
-            <h1 class="text-4xl md:text-5xl font-bold text-amber-900">معادلات الميزان ⚖️</h1>
-            <p class="text-lg md:text-xl mt-2 text-amber-700">اعزل الصندوق <span class="font-bold bg-rose-700 text-white px-2 py-1 rounded">س</span> لإيجاد الحل!</p>
-        </header>
+  <main class="container">
+    <section id="home" class="card center">
+      <h2>Bienvenue — Commence par le tutoriel</h2>
+      <p>Tu vas d'abord résoudre 3 équations simples en utilisant le glisser‑déposer (ou toucher).</p>
+      <div style="margin-top:12px"><button id="startBtn" class="btn" type="button" onclick="startApp()">Démarrer le tutoriel</button></div>
+    </section>
 
-        <div id="level-display" class="mb-6 p-3 bg-white/70 rounded-lg shadow">
-            <h2 class="text-xl font-bold" id="level-title"></h2>
-            <p class="text-amber-800" id="level-description"></p>
-        </div>
+    <section id="play" class="card center" style="display:none">
+      <div class="progressRow" id="progressRow"></div>
+      <div class="equation" id="equationText">x + 3 = 7</div>
 
-        <div id="equation-display" class="text-3xl font-bold my-6 p-4 bg-white/60 rounded-xl shadow-inner" dir="ltr"></div>
+      <div id="balanceWrap">
+        <svg id="balance" viewBox="0 0 320 160" aria-hidden="true">
+          <line x1="20" y1="80" x2="300" y2="80" stroke="#444" stroke-width="3"/>
+          <rect id="leftPan" x="60" y="80" width="60" height="22" rx="8" fill="#e6f0ff"/>
+          <rect id="rightPan" x="200" y="80" width="60" height="22" rx="8" fill="#feecec"/>
+          <g id="leftBubbles" transform="translate(40,20)"></g>
+          <g id="rightBubbles" transform="translate(180,20)"></g>
+        </svg>
+      </div>
 
-        <div class="flex justify-center items-end relative mb-4">
-            <div id="left-side" class="equation-side" data-side="left"></div>
-            <div class="balance-beam absolute bottom-0"></div>
-            <div class="fulcrum"></div>
-            <div id="right-side" class="equation-side" data-side="right"></div>
-        </div>
+      <div class="actions" id="opsRow" aria-label="Opérations">
+      </div>
 
-        <div class="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
-            <button id="divide-btn" class="hidden px-8 py-3 bg-sky-600 text-white font-bold rounded-lg shadow-lg hover:bg-sky-700 transition-transform transform hover:scale-105">قسّم! ➗</button>
-            <button id="reset-btn" class="px-6 py-2 bg-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-400 transition">إعادة تعيين</button>
-        </div>
+      <div class="answerRow">
+        <label for="answerInput">x =</label>
+        <input id="answerInput" type="text" placeholder="ex: 4" inputmode="numeric">
+        <button id="checkBtn" class="btn" type="button" onclick="checkAnswer()">Vérifier</button>
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+
+      <div style="margin-top:10px;font-size:.9rem;color:#666">Drag & drop: fais glisser une opération sur la balance pour l'appliquer aux deux côtés. Sur mobile, appuie pour sélectionner puis tape la balance.</div>
+    </section>
+  </main>
+
+  <div id="overlay" class="overlay" role="dialog" aria-hidden="true">
+    <div class="card">
+      <h1 id="overlayTitle">Bravo ! 🎉</h1>
+      <p id="overlayMsg" style="font-size:1.1rem;margin:8px 0">Tu as trouvé la bonne réponse.</p>
+      <div id="overlayDetails" style="margin:8px 0;color:#333"></div>
+      <div style="margin-top:12px"><button id="nextBtn" class="btn" type="button" onclick="onNextClicked()">Suivant</button></div>
     </div>
+  </div>
 
-    <div id="success-modal" class="feedback-modal hidden fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-        <div class="bg-white rounded-2xl p-8 text-center shadow-2xl transform transition-all max-w-sm w-full">
-            <div class="text-6xl mb-4">🎉</div>
-            <h2 class="text-3xl font-bold text-green-600 mb-2">أحسنت!</h2>
-            <p class="text-lg text-gray-700 mb-4">لقد وجدت الحل الصحيح!</p>
-            <p id="solution-text" class="text-2xl font-bold bg-green-100 text-green-700 p-3 rounded-lg" dir="ltr"></p>
-            <button id="next-level-btn" class="mt-6 w-full px-6 py-3 bg-green-600 text-white font-bold rounded-lg shadow-lg hover:bg-green-700 transition">المستوى التالي</button>
-        </div>
-    </div>
+  <script>
+    // quick defensive wrapper so buttons still work even if some listeners fail
+    function startApp(){ try{ _startApp(); }catch(e){ console.error(e); alert('Erreur démarrage: '+e.message); } }
+    function checkAnswer(){ try{ _checkAnswer(); }catch(e){ console.error(e); alert('Erreur verification: '+e.message); } }
+    function onNextClicked(){ try{ _onNextClicked(); }catch(e){ console.error(e); alert('Erreur suivant: '+e.message); } }
 
-    <script>
-        // --- DOM Elements ---
-        const leftSide = document.getElementById('left-side');
-        const rightSide = document.getElementById('right-side');
-        const resetBtn = document.getElementById('reset-btn');
-        const equationDisplay = document.getElementById('equation-display');
-        const successModal = document.getElementById('success-modal');
-        const nextLevelBtn = document.getElementById('next-level-btn');
-        const solutionText = document.getElementById('solution-text');
-        const levelTitle = document.getElementById('level-title');
-        const levelDescription = document.getElementById('level-description');
-        const divideBtn = document.getElementById('divide-btn');
+    // MAIN
+    const STATE = { tutorialMode:true, tutorialRemaining:3, world:1, levelIndex:0, worlds:[{id:1,levels:3},{id:2,levels:4},{id:3,levels:4},{id:4,levels:4},{id:5,levels:5}], current:null, progress:{} };
+    const OPS = ['-1','-2','-3','-5','+1','+2','+5','÷2','÷3','÷4','×2','×3'];
+    let floatClone = null, touchDragging=null;
 
-        // --- Game State ---
-        let gameState = {};
-        let draggedItem = null;
-        let currentLevel = 1;
+    function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+    function choose(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
-        // --- Level Definitions ---
-        const levels = [
-            { // Level 1: x + b = c (b>0)
-                description: "الجمع فقط: اسحب الأحجار الزرقاء للجهة الأخرى لعزل 'س'.",
-                generate: () => {
-                    const x = Math.floor(Math.random() * 8) + 1; // 1-8
-                    const b = Math.floor(Math.random() * 8) + 1; // 1-8
-                    return { left: { x: 1, gems: b }, right: { x: 0, gems: x + b }, solution: x };
-                }
-            },
-            { // Level 2: x - b = c
-                description: "الطرح: اسحب الأحجار الحمراء للجهة الأخرى.",
-                generate: () => {
-                    const x = Math.floor(Math.random() * 8) + 3; // 3-10
-                    const b = -(Math.floor(Math.random() * (x-1)) + 1); // -1 to -(x-1)
-                    return { left: { x: 1, gems: b }, right: { x: 0, gems: x + b }, solution: x };
-                }
-            },
-            { // Level 3: x + b = c (mixed)
-                description: "الجمع والطرح: تعامل مع الأحجار الموجبة والسالبة.",
-                generate: () => {
-                    const x = Math.floor(Math.random() * 8) + 1;
-                    let b = Math.floor(Math.random() * 12) - 6; // -6 to 5
-                    if (b === 0) b = 7;
-                    return { left: { x: 1, gems: b }, right: { x: 0, gems: x + b }, solution: x };
-                }
-            },
-            { // Level 4: ax + b = cx + d
-                description: "متغيرات في كلا الطرفين: اجمع كل صناديق 'س' في جهة واحدة.",
-                generate: () => {
-                    const x = Math.floor(Math.random() * 5) + 1; // 1-5
-                    const a = Math.floor(Math.random() * 2) + 2; // 2 or 3
-                    const c = 1;
-                    const b = Math.floor(Math.random() * 10) - 5; // -5 to 4
-                    const d = (a - c) * x + b;
-                    // Randomly place terms
-                    const sideA = Math.random() > 0.5;
-                    return {
-                        left: { x: sideA ? a : c, gems: sideA ? b : d },
-                        right: { x: sideA ? c : a, gems: sideA ? d : b },
-                        solution: x
-                    };
-                }
-            },
-            { // Level 5: ax + b = c
-                description: "القسمة: اعزل صناديق 'س' ثم استخدم زر القسمة.",
-                generate: () => {
-                    const a = Math.floor(Math.random() * 3) + 2; // 2-4
-                    const x = Math.floor(Math.random() * 5) + 1; // 1-5
-                    const b = Math.floor(Math.random() * 10) - 5; // -5 to 4
-                    return { left: { x: a, gems: b }, right: { x: 0, gems: a * x + b }, solution: x };
-                }
-            },
-            { // Level 6: ax + b = cx + d (Full)
-                description: "الإتقان: اجمع كل المهارات لحل المعادلات المعقدة.",
-                generate: () => {
-                    const x = Math.floor(Math.random() * 6) + 1; // 1-6
-                    const c = Math.floor(Math.random() * 2) + 1; // 1 or 2
-                    const a = c + Math.floor(Math.random() * 2) + 1; // a > c
-                    const b = Math.floor(Math.random() * 10) - 5;
-                    const d = (a - c) * x + b;
-                    const sideA = Math.random() > 0.5;
-                     return {
-                        left: { x: sideA ? a : c, gems: sideA ? b : d },
-                        right: { x: sideA ? c : a, gems: sideA ? d : b },
-                        solution: x
-                    };
-                }
-            }
-        ];
+    function generateSimpleEquation(){ const a=rand(1,5); const x=rand(1,6); const b=x+a; return {type:'x+a', a:a, b:b, solution:x, text:`x + ${a} = ${b}`}; }
+    function generateLevel(world,index){ if(world===1) return generateSimpleEquation(); if(world===2){ const k=choose([2,3,4]); const x=rand(1,6); const b=k*x; return {type:'kx',k:k,b:b,solution:x,text:`${k}x = ${b}`}; } if(world===3){ const k=choose([2,3]); const x=rand(1,6); const a=rand(0,6); const b=k*x+a; return {type:'kx+a',k:k,a:a,b:b,solution:x,text:`${k}x + ${a} = ${b}`}; } if(world===4){ const k=choose([2,3,4]); const x=rand(1,6); const a=rand(0,4); const b=k*(x+a); return {type:'k(x+a)',k:k,a:a,b:b,solution:x,text:`${k}(x + ${a}) = ${b}`}; } if(world===5){ const k=choose([2,3]); const x=rand(1,8); const a=rand(1,6); const b=k*x + a; const word = `Le ${k===2?'double':'triple'} d'un nombre augmenté de ${a} vaut ${b}.`; return {type:'word',k:k,a:a,b:b,solution:x,text:`${k}x + ${a} = ${b}`,wordProblem:word}; } return generateSimpleEquation(); }
 
-        function generateEquation() {
-            hideSuccessModal();
-            divideBtn.classList.add('hidden');
-            const levelIndex = Math.min(currentLevel - 1, levels.length - 1);
-            const level = levels[levelIndex];
-            
-            levelTitle.textContent = `المستوى ${currentLevel}`;
-            levelDescription.textContent = level.description;
-            
-            const eq = level.generate();
-            gameState = {
-                left: eq.left,
-                right: eq.right,
-                solution: eq.solution,
-                original: JSON.parse(JSON.stringify({ left: eq.left, right: eq.right }))
-            };
-            renderEquation();
-        }
+    function renderOps(){ const opsRow=document.getElementById('opsRow'); opsRow.innerHTML=''; OPS.forEach(op=>{ const el=document.createElement('div'); el.className='opTile'; el.textContent=op; el.draggable=true; el.setAttribute('data-op',op);
+        el.addEventListener('dragstart',(e)=>{ e.dataTransfer.setData('text/plain',op); setTimeout(()=>el.classList.add('ghost'),0); }); el.addEventListener('dragend',()=>el.classList.remove('ghost'));
+        el.addEventListener('click',(e)=>{ if(isTouchDevice()){ document.querySelectorAll('.opTile').forEach(t=>t.classList.remove('selected')); el.classList.add('selected'); document.getElementById('feedback').textContent='Opération sélectionnée: '+op+'. Tape la balance pour appliquer.'; } else { applyAction(op); } });
+        el.addEventListener('touchstart',touchStartHandler);
+        opsRow.appendChild(el);
+    }); }
 
-        function renderEquation() {
-            leftSide.innerHTML = '';
-            rightSide.innerHTML = '';
+    function isTouchDevice(){ return ('ontouchstart' in window) || navigator.maxTouchPoints>0; }
 
-            createItems(gameState.left.x, 'x', leftSide);
-            createItems(gameState.left.gems, 'gem', leftSide);
-            createItems(gameState.right.x, 'x', rightSide);
-            createItems(gameState.right.gems, 'gem', rightSide);
-            
-            updateEquationDisplay();
-            addDragListeners();
-        }
+    const balanceSVG = document.getElementById('balance'); balanceSVG.addEventListener('dragover',(e)=>{ e.preventDefault(); }); balanceSVG.addEventListener('drop',(e)=>{ e.preventDefault(); const op=e.dataTransfer.getData('text/plain'); if(op) applyAction(op); });
+    balanceSVG.addEventListener('click',()=>{ const sel=document.querySelector('.opTile.selected'); if(sel){ applyAction(sel.getAttribute('data-op')); sel.classList.remove('selected'); } });
 
-        function createItems(value, type, parent) {
-            if (value === 0) return;
+    function touchStartHandler(e){ const el=e.currentTarget; const op=el.getAttribute('data-op'); touchDragging={op,el}; floatClone=el.cloneNode(true); floatClone.classList.add('floatClone'); document.body.appendChild(floatClone); moveClone(e.touches[0].clientX,e.touches[0].clientY); document.addEventListener('touchmove',touchMove); document.addEventListener('touchend',touchEnd); }
+    function touchMove(e){ if(!floatClone) return; moveClone(e.touches[0].clientX,e.touches[0].clientY); }
+    function moveClone(x,y){ floatClone.style.left=x+'px'; floatClone.style.top=y+'px'; }
+    function touchEnd(e){ if(!touchDragging) return; const touch=e.changedTouches[0]; const elAt=document.elementFromPoint(touch.clientX,touch.clientY); if(elAt && elAt.closest('#balance')) applyAction(touchDragging.op); if(floatClone){ floatClone.remove(); floatClone=null; } touchDragging=null; document.removeEventListener('touchmove',touchMove); document.removeEventListener('touchend',touchEnd); }
 
-            if (type === 'gem') {
-                const el = document.createElement('div');
-                el.className = `item ${value > 0 ? 'gem-pos' : 'gem-neg'}`;
-                el.textContent = value > 0 ? `+${value}` : `${value}`;
-                el.dataset.type = 'gem';
-                el.dataset.value = value;
-                el.draggable = true;
-                parent.appendChild(el);
-            } else { // x or anti-x
-                for (let i = 0; i < Math.abs(value); i++) {
-                    const el = document.createElement('div');
-                    el.className = `item ${value > 0 ? 'x-box' : 'anti-x-box'}`;
-                    el.textContent = value > 0 ? 'س' : '-س';
-                    el.dataset.type = value > 0 ? 'x' : 'anti-x';
-                    el.dataset.value = value > 0 ? 1 : -1;
-                    el.draggable = true;
-                    parent.appendChild(el);
-                }
-            }
-        }
-        
-        function updateEquationDisplay() {
-            const getSideStr = (side) => {
-                const xCount = Array.from(side.querySelectorAll('[data-type="x"]')).length;
-                const antiXCount = Array.from(side.querySelectorAll('[data-type="anti-x"]')).length;
-                const totalX = xCount - antiXCount;
-                
-                const totalGems = Array.from(side.querySelectorAll('[data-type="gem"]'))
-                                     .reduce((sum, el) => sum + parseInt(el.dataset.value), 0);
-                
-                let parts = [];
-                if (totalX !== 0) parts.push(totalX === 1 ? 'س' : totalX === -1 ? '-س' : `${totalX}س`);
-                if (totalGems !== 0) {
-                     if(parts.length > 0) parts.push(totalGems > 0 ? `+ ${totalGems}` : `- ${Math.abs(totalGems)}`);
-                     else parts.push(totalGems > 0 ? `${totalGems}` : `-${Math.abs(totalGems)}`)
-                }
-                if (parts.length === 0) return '0';
-                return parts.join(' ');
-            };
-            
-            equationDisplay.textContent = `${getSideStr(leftSide)} = ${getSideStr(rightSide)}`;
-        }
+    function applyAction(op){ try{ const cur=STATE.current; if(!cur) return; const fb=document.getElementById('feedback'); fb.textContent=`Opération : ${op} appliquée.`; if(op.includes('+')||op.includes('-')){ const n=parseInt(op.replace('+','')); if(cur.type==='x+a'){ cur.a+=n; cur.b+=n; cur.text=`x + ${cur.a} = ${cur.b}`; } else if(cur.type==='kx+a'){ cur.a+=n; cur.b+=n; cur.text=`${cur.k}x + ${cur.a} = ${cur.b}`; } else if(cur.type==='kx'){ cur.b+=n; cur.text=`${cur.k}x = ${cur.b}`; } else if(cur.type==='k(x+a)'){ cur.b+=n; cur.text=`${cur.k}(x + ${cur.a}) = ${cur.b}`; } else { cur.b+=n; cur.text=`${cur.text.split('=')[0]} = ${cur.b}`; } renderEquation(); animateBubbles(Math.abs(n)); }
+      else if(op.includes('×')||op.toLowerCase().includes('x')){ const m=parseInt(op.replace(/[×x]/g,'')); if(cur.type==='x+a'){ cur.a*=m; cur.b*=m; cur.text=`x + ${cur.a} = ${cur.b}`; } else if(cur.type==='kx'){ cur.k*=m; cur.b*=m; cur.text=`${cur.k}x = ${cur.b}`; } else { cur.b*=m; cur.text=`${cur.text.split('=')[0]} = ${cur.b}`; } renderEquation(); animateBubbles(3); }
+      else if(op.includes('÷')){ const d=parseInt(op.replace('÷','')); const fb=document.getElementById('feedback'); if(cur.type==='x+a'){ if((cur.b % d)===0){ cur.a=cur.a/d; cur.b=cur.b/d; cur.text=`x + ${cur.a} = ${cur.b}`; renderEquation(); animateBubbles(3); } else fb.textContent='Division non entière — évite pour l\'instant.'; } else if(cur.type==='kx'){ if((cur.k % d)===0 && (cur.b % d)===0){ cur.k=cur.k/d; cur.b=cur.b/d; cur.text=`${cur.k}x = ${cur.b}`; renderEquation(); animateBubbles(3); } else fb.textContent='Division non entière — évite pour l\'instant.'; } else if(cur.type==='kx+a'){ if((cur.b % d)===0){ cur.k=cur.k/d; cur.a=cur.a/d; cur.b=cur.b/d; cur.text=`${cur.k}x + ${cur.a} = ${cur.b}`; renderEquation(); animateBubbles(3); } else fb.textContent='Division non entière — évite pour l\'instant.'; } else fb.textContent='Impossible de diviser ici.'; }
+      document.getElementById('answerInput').value='';
+    } catch(e){ console.error('applyAction error',e); }
+    }
 
+    function renderEquation(){ if(!STATE.current) return; const eq=document.getElementById('equationText'); eq.textContent = STATE.current.wordProblem? STATE.current.wordProblem + ' → ' + STATE.current.text : STATE.current.text; }
+    function animateBubbles(n){ const leftG=document.getElementById('leftBubbles'); const rightG=document.getElementById('rightBubbles'); leftG.innerHTML=''; rightG.innerHTML=''; for(let i=0;i<Math.min(n,8);i++){ const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',10+i*10); c.setAttribute('cy',10); c.setAttribute('r',6); c.setAttribute('fill','#60a5fa'); leftG.appendChild(c); const c2=document.createElementNS('http://www.w3.org/2000/svg','circle'); c2.setAttribute('cx',10+i*10); c2.setAttribute('cy',10); c2.setAttribute('r',6); c2.setAttribute('fill','#f87171'); rightG.appendChild(c2); } setTimeout(()=>{ document.getElementById('leftBubbles').innerHTML=''; document.getElementById('rightBubbles').innerHTML=''; },700); }
 
-        // --- Drag and Drop Logic ---
-        function addDragListeners() {
-            document.querySelectorAll('[draggable="true"]').forEach(item => {
-                item.addEventListener('dragstart', handleDragStart);
-                item.addEventListener('touchstart', handleTouchStart, { passive: false });
-            });
-            [leftSide, rightSide].forEach(side => {
-                side.addEventListener('dragover', handleDragOver);
-                side.addEventListener('dragleave', handleDragLeave);
-                side.addEventListener('drop', handleDrop);
-            });
-            document.addEventListener('touchmove', handleTouchMove, { passive: false });
-            document.addEventListener('touchend', handleTouchEnd);
-        }
+    function _checkAnswer(){ const cur=STATE.current; if(!cur) return; const ansRaw=document.getElementById('answerInput').value.trim(); const fb=document.getElementById('feedback'); if(!ansRaw){ fb.textContent='Entre une valeur pour x.'; return; } const parsed=parseFloat(ansRaw); if(isNaN(parsed)){ fb.textContent='Format invalide.'; return; } if(Math.abs(parsed - cur.solution) < 1e-9){ showOverlay('Bravo ! 🎉', `x = ${cur.solution} est correct.`, buildVerification(cur, cur.solution)); } else { fb.textContent=`Ce n'est pas correct — tu as proposé ${ansRaw}. Essaie encore.`; } }
 
-        function handleDragStart(e) {
-            draggedItem = e.target;
-            setTimeout(() => e.target.style.opacity = '0.5', 0);
-        }
+    function buildVerification(cur,val){ if(cur.type==='x+a'){ return `${val} + ${cur.a} = ${val + cur.a} → ${val + cur.a} = ${cur.b}`; } if(cur.type==='kx'){ return `${cur.k}×${val} = ${cur.k*val} → ${cur.k*val} = ${cur.b}`; } if(cur.type==='kx+a'){ return `${cur.k}×${val} + ${cur.a} = ${cur.k*val + cur.a} → ${cur.k*val + cur.a} = ${cur.b}`; } if(cur.type==='k(x+a)'){ return `${cur.k}×(${val} + ${cur.a}) = ${cur.k*(val + cur.a)} → ${cur.k*(val + cur.a)} = ${cur.b}`; } if(cur.wordProblem){ return `${cur.wordProblem}<br>${cur.text}<br>${buildVerification({type:'kx+a',k:cur.k,a:cur.a,b:cur.b},val)}`; } return ''; }
 
-        function handleDragOver(e) {
-            e.preventDefault();
-            this.classList.add('drag-over');
-        }
+    function showOverlay(title,msg,details){ document.getElementById('overlayTitle').textContent=title; document.getElementById('overlayMsg').textContent=msg; document.getElementById('overlayDetails').innerHTML=details; document.getElementById('overlay').classList.add('show'); document.getElementById('overlay').setAttribute('aria-hidden','false'); }
+    function hideOverlay(){ document.getElementById('overlay').classList.remove('show'); document.getElementById('overlay').setAttribute('aria-hidden','true'); }
 
-        function handleDragLeave() { this.classList.remove('drag-over'); }
+    function _onNextClicked(){ hideOverlay(); if(STATE.tutorialMode){ STATE.tutorialRemaining--; if(STATE.tutorialRemaining>0){ loadTutorialLevel(); return; } STATE.tutorialMode=false; STATE.world=1; STATE.levelIndex=0; prepareProgressUI(); loadNextLevel(); return; } STATE.levelIndex++; const worldDef=STATE.worlds.find(w=>w.id===STATE.world); if(STATE.levelIndex >= worldDef.levels){ STATE.progress['w'+STATE.world]=true; STATE.world++; STATE.levelIndex=0; if(STATE.world>STATE.worlds.length){ showOverlay('Félicitations !','Tu as fini tous les mondes 🎖️','Tu peux rejouer ou réinitialiser le jeu.'); return; } }
+      loadNextLevel(); updateProgressStars(); }
 
-        function handleDrop(e) {
-            e.preventDefault();
-            this.classList.remove('drag-over');
-            if (!draggedItem || this === draggedItem.parentElement) {
-                if (draggedItem) draggedItem.style.opacity = '1';
-                draggedItem = null;
-                return;
-            }
-            
-            const type = draggedItem.dataset.type;
-            const value = parseInt(draggedItem.dataset.value);
+    function loadTutorialLevel(){ document.getElementById('play').style.display='block'; document.getElementById('home').style.display='none'; STATE.current=generateSimpleEquation(); renderEquation(); document.getElementById('feedback').textContent='Tutoriel — résous cette équation.'; document.getElementById('answerInput').value=''; }
+    function loadNextLevel(){ document.getElementById('play').style.display='block'; document.getElementById('home').style.display='none'; STATE.current=generateLevel(STATE.world,STATE.levelIndex); renderEquation(); document.getElementById('feedback').textContent='Niveau'; document.getElementById('answerInput').value=''; }
 
-            createItems(type.includes('x') ? -value : -value, type.includes('x') ? 'x' : 'gem', this);
-            draggedItem.parentElement.removeChild(draggedItem);
+    function prepareProgressUI(){ const progressRow=document.getElementById('progressRow'); progressRow.innerHTML=''; STATE.worlds.forEach(w=>{ const sp=document.createElement('div'); sp.className='star'; sp.id='prog_w'+w.id; sp.textContent='☆'; progressRow.appendChild(sp); }); updateProgressStars(); }
+    function updateProgressStars(){ STATE.worlds.forEach(w=>{ const el=document.getElementById('prog_w'+w.id); if(el){ el.textContent = STATE.progress['w'+w.id] ? '★' : (STATE.world> w.id ? '★' : '☆'); el.className = 'star ' + (STATE.progress['w'+w.id] ? 'active' : ''); } }); }
 
-            draggedItem = null;
-            simplifyAndCheck();
-        }
-        
-        // --- Touch Event Handlers ---
-        let clone;
-        function handleTouchStart(e) {
-            e.preventDefault();
-            draggedItem = e.target;
-            clone = draggedItem.cloneNode(true);
-            clone.style.position = 'absolute';
-            clone.style.pointerEvents = 'none';
-            clone.style.opacity = '0.8';
-            document.body.appendChild(clone);
-            const touch = e.touches[0];
-            moveClone(touch.clientX, touch.clientY);
-            draggedItem.style.opacity = '0.5';
-        }
+    function startUp(){ try{ renderOps(); prepareProgressUI(); }catch(e){ console.error('startup error',e); } }
 
-        function handleTouchMove(e) {
-            if (!draggedItem) return;
-            e.preventDefault();
-            const touch = e.touches[0];
-            moveClone(touch.clientX, touch.clientY);
-            [leftSide, rightSide].forEach(side => {
-                const rect = side.getBoundingClientRect();
-                if (touch.clientX > rect.left && touch.clientX < rect.right &&
-                    touch.clientY > rect.top && touch.clientY < rect.bottom) {
-                    side.classList.add('drag-over');
-                } else {
-                    side.classList.remove('drag-over');
-                }
-            });
-        }
-        
-        function moveClone(x, y) {
-            if (clone) {
-                clone.style.left = `${x - clone.offsetWidth / 2}px`;
-                clone.style.top = `${y - clone.offsetHeight / 2}px`;
-            }
-        }
+    // touch helpers already set on ops creation
+    function startAppInternal(){ document.getElementById('startBtn').disabled=true; renderOps(); loadTutorialLevel(); prepareProgressUI(); }
 
-        function handleTouchEnd(e) {
-            if (!draggedItem) return;
-            document.body.removeChild(clone);
-            clone = null;
-            
-            const touch = e.changedTouches[0];
-            const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.equation-side');
-            
-            [leftSide, rightSide].forEach(side => side.classList.remove('drag-over'));
+    // wire public wrappers to safe internals
+    function _startApp(){ startAppInternal(); }
 
-            if (dropTarget && dropTarget !== draggedItem.parentElement) {
-                 const type = draggedItem.dataset.type;
-                 const value = parseInt(draggedItem.dataset.value);
-                 createItems(type.includes('x') ? -value : -value, type.includes('x') ? 'x' : 'gem', dropTarget);
-                 draggedItem.parentElement.removeChild(draggedItem);
-                 simplifyAndCheck();
-            } else {
-                draggedItem.style.opacity = '1';
-            }
-            draggedItem = null;
-        }
+    // initial
+    (function init(){ startUp(); if(isTouchDevice()) document.body.classList.add('touch'); console.log('Équilibra initialisé'); })();
 
-        // --- Game Logic ---
-        function simplifyAndCheck() {
-            setTimeout(() => {
-                simplifySide(leftSide);
-                simplifySide(rightSide);
-            }, 100); 
-
-            setTimeout(checkGameState, 700);
-        }
-
-        function simplifySide(side) {
-            // Simplify gems
-            let gems = Array.from(side.querySelectorAll('[data-type="gem"]'));
-            if (gems.length > 1) {
-                const totalValue = gems.reduce((sum, g) => sum + parseInt(g.dataset.value), 0);
-                gems.forEach(g => g.remove());
-                if (totalValue !== 0) createItems(totalValue, 'gem', side);
-            }
-
-            // Cancel out x and anti-x
-            let xBoxes = Array.from(side.querySelectorAll('[data-type="x"]'));
-            let antiXBoxes = Array.from(side.querySelectorAll('[data-type="anti-x"]'));
-
-            const pairs = Math.min(xBoxes.length, antiXBoxes.length);
-            for (let i = 0; i < pairs; i++) {
-                xBoxes[i].classList.add('canceling');
-                antiXBoxes[i].classList.add('canceling');
-                setTimeout(() => {
-                    xBoxes[i].remove();
-                    antiXBoxes[i].remove();
-                    updateEquationDisplay();
-                    addDragListeners();
-                }, 450);
-            }
-            setTimeout(() => {
-                updateEquationDisplay();
-                addDragListeners();
-            }, 500);
-        }
-
-        function checkGameState() {
-            const leftX = leftSide.querySelectorAll('[data-type="x"]').length;
-            const leftAntiX = leftSide.querySelectorAll('[data-type="anti-x"]').length;
-            const leftGems = leftSide.querySelectorAll('[data-type="gem"]').length;
-            const rightX = rightSide.querySelectorAll('[data-type="x"]').length;
-            const rightAntiX = rightSide.querySelectorAll('[data-type="anti-x"]').length;
-            const rightGems = rightSide.querySelectorAll('[data-type="gem"]').length;
-
-            const xOnLeft = leftX > 0 && leftAntiX === 0 && leftGems === 0;
-            const xOnRight = rightX > 0 && rightAntiX === 0 && rightGems === 0;
-            const gemsOnLeft = leftGems === 1 && leftX === 0 && leftAntiX === 0;
-            const gemsOnRight = rightGems === 1 && rightX === 0 && rightAntiX === 0;
-            
-            // Win condition: x = number
-            if ((xOnLeft && leftX === 1 && gemsOnRight) || (xOnRight && rightX === 1 && gemsOnLeft)) {
-                const solutionSide = xOnLeft ? rightSide : leftSide;
-                const solutionValue = solutionSide.querySelector('[data-type="gem"]').dataset.value;
-                if (parseInt(solutionValue) === gameState.solution) {
-                    showSuccessModal(solutionValue);
-                }
-                return;
-            }
-
-            // Division condition: ax = c
-            if ((xOnLeft && gemsOnRight) || (xOnRight && gemsOnLeft)) {
-                divideBtn.classList.remove('hidden');
-            } else {
-                divideBtn.classList.add('hidden');
-            }
-        }
-        
-        function handleDivision() {
-            const xSide = leftSide.querySelectorAll('[data-type="x"]').length > 0 ? leftSide : rightSide;
-            const gemSide = xSide === leftSide ? rightSide : leftSide;
-            
-            const xCount = xSide.querySelectorAll('[data-type="x"]').length;
-            const gemValue = parseInt(gemSide.querySelector('[data-type="gem"]').dataset.value);
-
-            if (xCount > 0 && gemValue % xCount === 0) {
-                const finalValue = gemValue / xCount;
-
-                // Animation
-                xSide.innerHTML = '';
-                gemSide.innerHTML = '';
-                createItems(1, 'x', xSide);
-                createItems(finalValue, 'gem', gemSide);
-                
-                divideBtn.classList.add('hidden');
-                updateEquationDisplay();
-                addDragListeners();
-
-                setTimeout(() => {
-                     if (finalValue === gameState.solution) {
-                        showSuccessModal(finalValue);
-                    }
-                }, 500);
-            }
-        }
-
-        function showSuccessModal(solution) {
-            solutionText.textContent = `س = ${solution}`;
-            successModal.classList.remove('hidden');
-        }
-        
-        function hideSuccessModal() {
-            successModal.classList.add('hidden');
-        }
-
-        function reset() {
-            gameState.left = JSON.parse(JSON.stringify(gameState.original.left));
-            gameState.right = JSON.parse(JSON.stringify(gameState.original.right));
-            divideBtn.classList.add('hidden');
-            renderEquation();
-        }
-
-        // --- Event Listeners ---
-        resetBtn.addEventListener('click', reset);
-        divideBtn.addEventListener('click', handleDivision);
-        nextLevelBtn.addEventListener('click', () => {
-            currentLevel++;
-            generateEquation();
-        });
-
-        // --- Initial Load ---
-        generateEquation();
-
-    </script>
+  </script>
 </body>
 </html>
-
